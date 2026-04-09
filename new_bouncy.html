@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Bouncy</title>
+  <style>
+    :root {
+      --bg-1: #06203d;
+      --bg-2: #0d355f;
+      --panel: #f6fbff;
+      --text: #11243b;
+      --accent: #ff7a18;
+      --accent-2: #1fa2ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(1300px 600px at 50% -10%, #2a8fd1 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+    }
+
+    .wrap {
+      width: min(92vw, 720px);
+      background: var(--panel);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 20px 60px rgba(3, 17, 33, 0.4);
+    }
+
+    .title {
+      margin: 0 0 8px;
+      font-size: clamp(1.4rem, 2.6vw, 2rem);
+      letter-spacing: 0.4px;
+    }
+
+    .sub {
+      margin: 0 0 14px;
+      color: #415a74;
+      font-size: 0.96rem;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 3px solid #0e2d4e;
+      border-radius: 14px;
+      background: #ebf7ff;
+      cursor: crosshair;
+    }
+
+    .hud {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: #e6f3ff;
+      border: 1px solid #bddcff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.92rem;
+      color: #163653;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), #ff5630);
+      cursor: pointer;
+    }
+
+    button:hover {
+      filter: brightness(1.04);
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1 class="title">New Bouncy</h1>
+    <p class="sub">Click in the bottom empty zone to drop the pointy bouncer. Clear all bubbles to win.</p>
+
+    <canvas id="game" width="560" height="560" aria-label="New Bouncy Game Board"></canvas>
+
+    <div class="hud">
+      <div class="pill" id="status">Bubbles left: 0</div>
+      <div class="pill" id="hint">Bottom 20% is your launch zone</div>
+      <button id="restart" type="button">Restart</button>
+    </div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const statusLabel = document.getElementById("status");
+    const hintLabel = document.getElementById("hint");
+    const restartBtn = document.getElementById("restart");
+
+    const COLS = 8;
+    const ROWS = 8;
+    const CELL = canvas.width / COLS;
+    const BUBBLE_ROWS = Math.floor(ROWS * 0.8);
+    const LAUNCH_Y = BUBBLE_ROWS * CELL;
+    const POINT_SIZE = 12;
+    const SPEED = 280;
+
+    const BUBBLE_TYPES = [
+      { color: "#8ac926", hp: 1, name: "Green" },
+      { color: "#ffca3a", hp: 2, name: "Yellow" },
+      { color: "#ff924c", hp: 3, name: "Orange" },
+      { color: "#ff595e", hp: 4, name: "Red" }
+    ];
+
+    let bubbles = [];
+    let bubblesLeft = 0;
+    let win = false;
+
+    const pointy = {
+      active: false,
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      angle: -Math.PI / 2
+    };
+
+    function randomBubbleType() {
+      return BUBBLE_TYPES[Math.floor(Math.random() * BUBBLE_TYPES.length)];
+    }
+
+    function initBubbles() {
+      bubbles = [];
+      bubblesLeft = 0;
+      for (let r = 0; r < ROWS; r += 1) {
+        const row = [];
+        for (let c = 0; c < COLS; c += 1) {
+          if (r < BUBBLE_ROWS) {
+            const type = randomBubbleType();
+            row.push({
+              alive: true,
+              color: type.color,
+              maxHp: type.hp,
+              hp: type.hp
+            });
+            bubblesLeft += 1;
+          } else {
+            row.push(null);
+          }
+        }
+        bubbles.push(row);
+      }
+      statusLabel.textContent = `Bubbles left: ${bubblesLeft}`;
+      hintLabel.textContent = "Bottom 20% is your launch zone";
+    }
+
+    function resetGame() {
+      pointy.active = false;
+      pointy.vx = 0;
+      pointy.vy = 0;
+      win = false;
+      initBubbles();
+      hintLabel.textContent = "Bottom 20% is your launch zone | HP: Green 1, Yellow 2, Orange 3, Red 4";
+      draw();
+    }
+
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function setDirectionByWall(wall) {
+      let deg;
+      if (wall === "left") deg = rand(-75, 75);
+      else if (wall === "right") deg = rand(105, 255);
+      else if (wall === "top") deg = rand(20, 160);
+      else deg = rand(-160, -20);
+
+      const rad = (deg * Math.PI) / 180;
+      pointy.vx = Math.cos(rad) * SPEED;
+      pointy.vy = Math.sin(rad) * SPEED;
+      pointy.angle = Math.atan2(pointy.vy, pointy.vx);
+    }
+
+    function bounceAfterBubbleHit() {
+      // Reverse main direction, then add jitter so each bubble hit feels bouncy and unpredictable.
+      const base = Math.atan2(pointy.vy, pointy.vx) + Math.PI;
+      const jitter = rand((-50 * Math.PI) / 180, (50 * Math.PI) / 180);
+      const rad = base + jitter;
+      pointy.vx = Math.cos(rad) * SPEED;
+      pointy.vy = Math.sin(rad) * SPEED;
+      pointy.angle = Math.atan2(pointy.vy, pointy.vx);
+    }
+
+    function launch(x, y) {
+      pointy.active = true;
+      pointy.x = x;
+      pointy.y = y;
+      const launchDeg = rand(-135, -45);
+      const rad = (launchDeg * Math.PI) / 180;
+      pointy.vx = Math.cos(rad) * SPEED;
+      pointy.vy = Math.sin(rad) * SPEED;
+      pointy.angle = Math.atan2(pointy.vy, pointy.vx);
+      hintLabel.textContent = "Bouncing... pop every bubble";
+    }
+
+    function blowBubbleAt(x, y) {
+      const c = Math.floor(x / CELL);
+      const r = Math.floor(y / CELL);
+      if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
+      const bubble = bubbles[r][c];
+      if (!bubble || !bubble.alive) return false;
+
+      bubble.hp -= 1;
+      if (bubble.hp <= 0) {
+        bubble.alive = false;
+        bubbles[r][c] = null;
+        bubblesLeft -= 1;
+        statusLabel.textContent = `Bubbles left: ${bubblesLeft}`;
+      }
+
+      if (bubblesLeft <= 0) {
+        win = true;
+        pointy.active = false;
+        hintLabel.textContent = "All bubbles destroyed. You win!";
+      }
+
+      return true;
+    }
+
+    function update(dt) {
+      if (!pointy.active || win) return;
+
+      pointy.x += pointy.vx * dt;
+      pointy.y += pointy.vy * dt;
+
+      if (pointy.x <= POINT_SIZE) {
+        pointy.x = POINT_SIZE;
+        setDirectionByWall("left");
+      } else if (pointy.x >= canvas.width - POINT_SIZE) {
+        pointy.x = canvas.width - POINT_SIZE;
+        setDirectionByWall("right");
+      }
+
+      if (pointy.y <= POINT_SIZE) {
+        pointy.y = POINT_SIZE;
+        setDirectionByWall("top");
+      } else if (pointy.y >= canvas.height - POINT_SIZE) {
+        pointy.y = canvas.height - POINT_SIZE;
+        setDirectionByWall("bottom");
+      }
+
+      pointy.angle = Math.atan2(pointy.vy, pointy.vx);
+      const hitBubble = blowBubbleAt(pointy.x, pointy.y);
+      if (hitBubble && !win) {
+        bounceAfterBubbleHit();
+      }
+    }
+
+    function drawBubble(r, c, bubble) {
+      const cx = c * CELL + CELL / 2;
+      const cy = r * CELL + CELL / 2;
+      const radius = CELL * 0.42;
+      const color = bubble.color;
+
+      const grad = ctx.createRadialGradient(cx - radius * 0.4, cy - radius * 0.45, radius * 0.15, cx, cy, radius);
+      grad.addColorStop(0, "#ffffff");
+      grad.addColorStop(0.35, color);
+      grad.addColorStop(1, "rgba(0,0,0,0.25)");
+
+      ctx.beginPath();
+      ctx.fillStyle = grad;
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      const hpRatio = bubble.hp / bubble.maxHp;
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.28)";
+      ctx.arc(cx, cy, radius * 0.75, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * hpRatio);
+      ctx.stroke();
+    }
+
+    function drawPointy() {
+      if (!pointy.active) return;
+
+      ctx.save();
+      ctx.translate(pointy.x, pointy.y);
+      ctx.rotate(pointy.angle);
+
+      ctx.beginPath();
+      ctx.moveTo(POINT_SIZE, 0);
+      ctx.lineTo(-POINT_SIZE * 0.9, POINT_SIZE * 0.55);
+      ctx.lineTo(-POINT_SIZE * 0.9, -POINT_SIZE * 0.55);
+      ctx.closePath();
+
+      const g = ctx.createLinearGradient(-POINT_SIZE, 0, POINT_SIZE, 0);
+      g.addColorStop(0, "#d91818");
+      g.addColorStop(1, "#ffb703");
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawBoard() {
+      const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      bg.addColorStop(0, "#d7f1ff");
+      bg.addColorStop(1, "#f7fdff");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "rgba(31, 162, 255, 0.12)";
+      ctx.fillRect(0, LAUNCH_Y, canvas.width, canvas.height - LAUNCH_Y);
+
+      ctx.strokeStyle = "rgba(5, 46, 86, 0.22)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= COLS; i += 1) {
+        const x = i * CELL;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let i = 0; i <= ROWS; i += 1) {
+        const y = i * CELL;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "#1f4f7e";
+      ctx.setLineDash([7, 7]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, LAUNCH_Y);
+      ctx.lineTo(canvas.width, LAUNCH_Y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function draw() {
+      drawBoard();
+
+      for (let r = 0; r < ROWS; r += 1) {
+        for (let c = 0; c < COLS; c += 1) {
+          const bubble = bubbles[r][c];
+          if (bubble && bubble.alive) {
+            drawBubble(r, c, bubble);
+          }
+        }
+      }
+
+      drawPointy();
+
+      if (win) {
+        ctx.save();
+        ctx.fillStyle = "rgba(5, 25, 40, 0.45)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.font = "bold 42px Trebuchet MS";
+        ctx.fillText("YOU WIN", canvas.width / 2, canvas.height / 2 - 8);
+        ctx.font = "20px Trebuchet MS";
+        ctx.fillText("Press Restart to play again", canvas.width / 2, canvas.height / 2 + 30);
+        ctx.restore();
+      }
+    }
+
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min((now - last) / 1000, 0.033);
+      last = now;
+      update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    canvas.addEventListener("click", (event) => {
+      if (pointy.active || win) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
+      const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
+
+      if (y < LAUNCH_Y) {
+        hintLabel.textContent = "Click inside the bottom empty zone to launch";
+        return;
+      }
+
+      launch(x, y);
+    });
+
+    restartBtn.addEventListener("click", resetGame);
+
+    resetGame();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
