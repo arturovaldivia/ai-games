@@ -111,6 +111,13 @@
       font-weight: 700;
     }
 
+    .shaft-value {
+      min-width: 54px;
+      font-size: 0.88rem;
+      color: #21496b;
+      font-weight: 700;
+    }
+
     button {
       border: 0;
       border-radius: 10px;
@@ -147,6 +154,10 @@
           <input id="pointySpeed" type="range" min="160" max="520" step="10" value="280" />
         </label>
         <span class="speed-value" id="speedValue">280 px/s</span>
+        <label for="shaftLength">Shaft length
+          <input id="shaftLength" type="range" min="24" max="180" step="4" value="84" />
+        </label>
+        <span class="shaft-value" id="shaftValue">84 px</span>
         <button id="addPointy" type="button">Add Pointy</button>
       </div>
     </div>
@@ -162,6 +173,8 @@
     const pointyColorInput = document.getElementById("pointyColor");
     const pointySpeedInput = document.getElementById("pointySpeed");
     const speedValueLabel = document.getElementById("speedValue");
+    const shaftLengthInput = document.getElementById("shaftLength");
+    const shaftValueLabel = document.getElementById("shaftValue");
     const addPointyBtn = document.getElementById("addPointy");
 
     const COLS = 8;
@@ -175,6 +188,9 @@
     const DEFAULT_POINTY_SPEED = 280;
     const MIN_POINTY_SPEED = 160;
     const MAX_POINTY_SPEED = 520;
+    const MIN_SHAFT_LENGTH = 24;
+    const MAX_SHAFT_LENGTH = 180;
+    const TAIL_SEGMENT_SIZE = 10;
 
     const BUBBLE_RADIUS = CELL * 0.42;
     const GRAVITY = 1200;
@@ -210,8 +226,24 @@
       arsenalLabel.textContent = `Pointies ready: ${pointyQueue.length}`;
     }
 
-    function createPointy(x, y, color, speed) {
+    function createTailSegments(x, y, angle, shaftLength) {
+      const count = Math.max(2, Math.round(shaftLength / TAIL_SEGMENT_SIZE));
+      const segments = [];
+      for (let i = 0; i < count; i += 1) {
+        const dist = (i + 1) * (shaftLength / count);
+        segments.push({
+          x: x - Math.cos(angle) * dist,
+          y: y - Math.sin(angle) * dist,
+          vx: 0,
+          vy: 0
+        });
+      }
+      return segments;
+    }
+
+    function createPointy(x, y, color, speed, shaftLength) {
       const clampedSpeed = Math.max(MIN_POINTY_SPEED, Math.min(MAX_POINTY_SPEED, speed));
+      const clampedShaftLength = Math.max(MIN_SHAFT_LENGTH, Math.min(MAX_SHAFT_LENGTH, shaftLength));
       const launchDeg = rand(-135, -45);
       const rad = (launchDeg * Math.PI) / 180;
 
@@ -222,12 +254,14 @@
         vy: Math.sin(rad) * clampedSpeed,
         angle: rad,
         color,
-        speed: clampedSpeed
+        speed: clampedSpeed,
+        shaftLength: clampedShaftLength,
+        tailSegments: createTailSegments(x, y, rad, clampedShaftLength)
       };
     }
 
-    function queuePointy(color, speed) {
-      pointyQueue.push({ color, speed });
+    function queuePointy(color, speed, shaftLength) {
+      pointyQueue.push({ color, speed, shaftLength });
       updateArsenalLabel();
     }
 
@@ -269,7 +303,11 @@
       pointyQueue = [];
       win = false;
       initBubbles();
-      queuePointy(pointyColorInput.value, Number(pointySpeedInput.value));
+      queuePointy(
+        pointyColorInput.value,
+        Number(pointySpeedInput.value || DEFAULT_POINTY_SPEED),
+        Number(shaftLengthInput.value)
+      );
       draw();
     }
 
@@ -302,10 +340,46 @@
       }
 
       const next = pointyQueue.shift();
-      pointies.push(createPointy(x, y, next.color, next.speed));
+      pointies.push(createPointy(x, y, next.color, next.speed, next.shaftLength));
       updateArsenalLabel();
       hintLabel.textContent = "Bouncing... pop every bubble";
       return true;
+    }
+
+    function updatePointyTail(pointy, stepDt) {
+      const anchorX = pointy.x - Math.cos(pointy.angle) * (POINT_SIZE * 0.85);
+      const anchorY = pointy.y - Math.sin(pointy.angle) * (POINT_SIZE * 0.85);
+      const desiredSpacing = pointy.shaftLength / pointy.tailSegments.length;
+
+      for (let i = 0; i < pointy.tailSegments.length; i += 1) {
+        const seg = pointy.tailSegments[i];
+        const target = i === 0
+          ? { x: anchorX, y: anchorY, vx: pointy.vx, vy: pointy.vy }
+          : pointy.tailSegments[i - 1];
+
+        const spring = i === 0 ? 48 : 34;
+        const damping = i === 0 ? 0.82 : 0.84;
+
+        seg.vx += (target.x - seg.x) * spring * stepDt;
+        seg.vy += (target.y - seg.y) * spring * stepDt;
+        seg.vx += (target.vx - seg.vx) * 0.06;
+        seg.vy += (target.vy - seg.vy) * 0.06;
+        seg.vx *= damping;
+        seg.vy *= damping;
+        seg.x += seg.vx * stepDt;
+        seg.y += seg.vy * stepDt;
+
+        const dx = seg.x - target.x;
+        const dy = seg.y - target.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const maxDist = desiredSpacing * 1.25;
+        if (dist > maxDist) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          seg.x = target.x + nx * maxDist;
+          seg.y = target.y + ny * maxDist;
+        }
+      }
     }
 
     function constrainBubbleToField(bubble) {
@@ -483,6 +557,8 @@
       if (hitIndex !== -1 && applyHitToBubble(hitIndex, pointy) && !win) {
         bounceAfterBubbleHit(pointy);
       }
+
+      updatePointyTail(pointy, stepDt);
     }
 
     function update(dt) {
@@ -528,6 +604,35 @@
     }
 
     function drawPointy(pointy) {
+      const anchorX = pointy.x - Math.cos(pointy.angle) * (POINT_SIZE * 0.85);
+      const anchorY = pointy.y - Math.sin(pointy.angle) * (POINT_SIZE * 0.85);
+
+      const chain = [{ x: anchorX, y: anchorY }, ...pointy.tailSegments];
+      for (let i = 0; i < chain.length - 1; i += 1) {
+        const p1 = chain[i];
+        const p2 = chain[i + 1];
+        const t = i / Math.max(1, chain.length - 2);
+        const width = 7 - t * 4.5;
+
+        ctx.beginPath();
+        ctx.lineCap = "round";
+        ctx.lineWidth = width;
+        ctx.strokeStyle = pointy.color;
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.lineCap = "round";
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(255,255,255,0.42)";
+      ctx.moveTo(anchorX, anchorY);
+      for (let i = 0; i < pointy.tailSegments.length; i += 1) {
+        ctx.lineTo(pointy.tailSegments[i].x, pointy.tailSegments[i].y);
+      }
+      ctx.stroke();
+
       ctx.save();
       ctx.translate(pointy.x, pointy.y);
       ctx.rotate(pointy.angle);
@@ -621,8 +726,16 @@
       speedValueLabel.textContent = `${pointySpeedInput.value} px/s`;
     });
 
+    shaftLengthInput.addEventListener("input", () => {
+      shaftValueLabel.textContent = `${shaftLengthInput.value} px`;
+    });
+
     addPointyBtn.addEventListener("click", () => {
-      queuePointy(pointyColorInput.value, Number(pointySpeedInput.value));
+      queuePointy(
+        pointyColorInput.value,
+        Number(pointySpeedInput.value || DEFAULT_POINTY_SPEED),
+        Number(shaftLengthInput.value)
+      );
       hintLabel.textContent = "Pointy added. Click in launch zone to drop it.";
     });
 
