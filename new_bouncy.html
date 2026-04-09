@@ -119,8 +119,15 @@
     const CELL = canvas.width / COLS;
     const BUBBLE_ROWS = Math.floor(ROWS * 0.8);
     const LAUNCH_Y = BUBBLE_ROWS * CELL;
+
     const POINT_SIZE = 12;
+    const PROJECTILE_RADIUS = POINT_SIZE * 0.85;
     const SPEED = 280;
+
+    const BUBBLE_RADIUS = CELL * 0.42;
+    const GRAVITY = 1200;
+    const DRAG = 0.992;
+    const WALL_BOUNCE = 0.18;
 
     const BUBBLE_TYPES = [
       { color: "#8ac926", hp: 1, name: "Green" },
@@ -142,33 +149,49 @@
       angle: -Math.PI / 2
     };
 
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
     function randomBubbleType() {
       return BUBBLE_TYPES[Math.floor(Math.random() * BUBBLE_TYPES.length)];
     }
 
+    function updateStatus() {
+      statusLabel.textContent = `Bubbles left: ${bubblesLeft}`;
+    }
+
     function initBubbles() {
       bubbles = [];
-      bubblesLeft = 0;
-      for (let r = 0; r < ROWS; r += 1) {
-        const row = [];
-        for (let c = 0; c < COLS; c += 1) {
-          if (r < BUBBLE_ROWS) {
-            const type = randomBubbleType();
-            row.push({
-              alive: true,
-              color: type.color,
-              maxHp: type.hp,
-              hp: type.hp
-            });
-            bubblesLeft += 1;
-          } else {
-            row.push(null);
-          }
+
+      const gap = BUBBLE_RADIUS * 0.04;
+      const spacingX = BUBBLE_RADIUS * 2 - gap;
+      const spacingY = Math.sqrt(3) * BUBBLE_RADIUS - gap;
+      const minX = BUBBLE_RADIUS + 2;
+      const maxX = canvas.width - BUBBLE_RADIUS - 2;
+      const maxY = LAUNCH_Y - BUBBLE_RADIUS - 2;
+
+      let row = 0;
+      for (let y = BUBBLE_RADIUS + 2; y <= maxY; y += spacingY) {
+        const offset = row % 2 === 0 ? 0 : BUBBLE_RADIUS;
+        for (let x = minX + offset; x <= maxX; x += spacingX) {
+          const type = randomBubbleType();
+          bubbles.push({
+            x,
+            y,
+            vx: 0,
+            vy: 0,
+            color: type.color,
+            maxHp: type.hp,
+            hp: type.hp
+          });
         }
-        bubbles.push(row);
+        row += 1;
       }
-      statusLabel.textContent = `Bubbles left: ${bubblesLeft}`;
-      hintLabel.textContent = "Bottom 20% is your launch zone";
+
+      bubblesLeft = bubbles.length;
+      updateStatus();
+      hintLabel.textContent = "Bottom 20% is your launch zone | HP: Green 1, Yellow 2, Orange 3, Red 4";
     }
 
     function resetGame() {
@@ -177,12 +200,7 @@
       pointy.vy = 0;
       win = false;
       initBubbles();
-      hintLabel.textContent = "Bottom 20% is your launch zone | HP: Green 1, Yellow 2, Orange 3, Red 4";
       draw();
-    }
-
-    function rand(min, max) {
-      return Math.random() * (max - min) + min;
     }
 
     function setDirectionByWall(wall) {
@@ -199,7 +217,6 @@
     }
 
     function bounceAfterBubbleHit() {
-      // Reverse main direction, then add jitter so each bubble hit feels bouncy and unpredictable.
       const base = Math.atan2(pointy.vy, pointy.vx) + Math.PI;
       const jitter = rand((-50 * Math.PI) / 180, (50 * Math.PI) / 180);
       const rad = base + jitter;
@@ -220,33 +237,142 @@
       hintLabel.textContent = "Bouncing... pop every bubble";
     }
 
-    function applyColumnGravity(col) {
-      const survivors = [];
-      for (let row = 0; row < BUBBLE_ROWS; row += 1) {
-        const bubble = bubbles[row][col];
-        if (bubble && bubble.hp > 0) {
-          survivors.push(bubble);
-        }
+    function constrainBubbleToField(bubble) {
+      if (bubble.x < BUBBLE_RADIUS) {
+        bubble.x = BUBBLE_RADIUS;
+        if (bubble.vx < 0) bubble.vx *= -WALL_BOUNCE;
+      } else if (bubble.x > canvas.width - BUBBLE_RADIUS) {
+        bubble.x = canvas.width - BUBBLE_RADIUS;
+        if (bubble.vx > 0) bubble.vx *= -WALL_BOUNCE;
       }
 
-      for (let row = BUBBLE_ROWS - 1; row >= 0; row -= 1) {
-        bubbles[row][col] = survivors.length > 0 ? survivors.pop() : null;
+      if (bubble.y < BUBBLE_RADIUS) {
+        bubble.y = BUBBLE_RADIUS;
+        if (bubble.vy < 0) bubble.vy *= -WALL_BOUNCE;
+      } else if (bubble.y > LAUNCH_Y - BUBBLE_RADIUS) {
+        bubble.y = LAUNCH_Y - BUBBLE_RADIUS;
+        if (bubble.vy > 0) bubble.vy *= -WALL_BOUNCE;
+        bubble.vx *= 0.985;
       }
     }
 
-    function blowBubbleAt(x, y) {
-      const c = Math.floor(x / CELL);
-      const r = Math.floor(y / CELL);
-      if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
-      const bubble = bubbles[r][c];
-      if (!bubble || bubble.hp <= 0) return false;
+    function resolveBubblePair(a, b) {
+      let dx = b.x - a.x;
+      let dy = b.y - a.y;
+      let dist = Math.hypot(dx, dy);
+      const minDist = BUBBLE_RADIUS * 2;
 
+      if (dist >= minDist) return;
+
+      if (dist < 0.0001) {
+        const angle = Math.random() * Math.PI * 2;
+        dx = Math.cos(angle);
+        dy = Math.sin(angle);
+        dist = 1;
+      }
+
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const overlap = minDist - dist;
+
+      // Symmetric positional correction keeps particles from interpenetrating.
+      a.x -= nx * overlap * 0.5;
+      a.y -= ny * overlap * 0.5;
+      b.x += nx * overlap * 0.5;
+      b.y += ny * overlap * 0.5;
+
+      const rvx = b.vx - a.vx;
+      const rvy = b.vy - a.vy;
+      const relNormalVel = rvx * nx + rvy * ny;
+
+      if (relNormalVel < 0) {
+        const restitution = 0.22;
+        const impulse = (-(1 + restitution) * relNormalVel) / 2;
+        a.vx -= impulse * nx;
+        a.vy -= impulse * ny;
+        b.vx += impulse * nx;
+        b.vy += impulse * ny;
+      }
+    }
+
+    function updateBubbles(stepDt) {
+      for (let i = 0; i < bubbles.length; i += 1) {
+        const bubble = bubbles[i];
+        bubble.vy += GRAVITY * stepDt;
+        bubble.x += bubble.vx * stepDt;
+        bubble.y += bubble.vy * stepDt;
+        bubble.vx *= DRAG;
+        bubble.vy *= DRAG;
+        constrainBubbleToField(bubble);
+      }
+
+      for (let iter = 0; iter < 4; iter += 1) {
+        for (let i = 0; i < bubbles.length; i += 1) {
+          for (let j = i + 1; j < bubbles.length; j += 1) {
+            resolveBubblePair(bubbles[i], bubbles[j]);
+          }
+        }
+        for (let i = 0; i < bubbles.length; i += 1) {
+          constrainBubbleToField(bubbles[i]);
+        }
+      }
+    }
+
+    function findHitBubbleIndex(x, y) {
+      const maxDist = BUBBLE_RADIUS + PROJECTILE_RADIUS;
+      const maxDistSq = maxDist * maxDist;
+
+      let hitIndex = -1;
+      let bestDistSq = Infinity;
+
+      for (let i = 0; i < bubbles.length; i += 1) {
+        const bubble = bubbles[i];
+        const dx = x - bubble.x;
+        const dy = y - bubble.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 <= maxDistSq && d2 < bestDistSq) {
+          hitIndex = i;
+          bestDistSq = d2;
+        }
+      }
+
+      return hitIndex;
+    }
+
+    function nudgeNearbyBubbles(cx, cy) {
+      for (let i = 0; i < bubbles.length; i += 1) {
+        const bubble = bubbles[i];
+        const dx = bubble.x - cx;
+        const dy = bubble.y - cy;
+        const dist = Math.hypot(dx, dy);
+        const reach = BUBBLE_RADIUS * 3.2;
+        if (dist < 0.0001 || dist > reach) continue;
+
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const strength = (1 - dist / reach) * 85;
+        bubble.vx += nx * strength;
+        bubble.vy += ny * strength * 0.65;
+      }
+    }
+
+    function applyHitToBubble(index) {
+      if (index < 0 || index >= bubbles.length) return false;
+
+      const bubble = bubbles[index];
       bubble.hp -= 1;
+
+      const speed = Math.hypot(pointy.vx, pointy.vy) || 1;
+      bubble.vx += (pointy.vx / speed) * 45;
+      bubble.vy += (pointy.vy / speed) * 45;
+
       if (bubble.hp <= 0) {
-        bubbles[r][c] = null;
-        applyColumnGravity(c);
+        const poppedX = bubble.x;
+        const poppedY = bubble.y;
+        bubbles.splice(index, 1);
         bubblesLeft -= 1;
-        statusLabel.textContent = `Bubbles left: ${bubblesLeft}`;
+        updateStatus();
+        nudgeNearbyBubbles(poppedX, poppedY);
       }
 
       if (bubblesLeft <= 0) {
@@ -258,11 +384,11 @@
       return true;
     }
 
-    function update(dt) {
+    function updatePointy(stepDt) {
       if (!pointy.active || win) return;
 
-      pointy.x += pointy.vx * dt;
-      pointy.y += pointy.vy * dt;
+      pointy.x += pointy.vx * stepDt;
+      pointy.y += pointy.vy * stepDt;
 
       if (pointy.x <= POINT_SIZE) {
         pointy.x = POINT_SIZE;
@@ -281,21 +407,38 @@
       }
 
       pointy.angle = Math.atan2(pointy.vy, pointy.vx);
-      const hitBubble = blowBubbleAt(pointy.x, pointy.y);
-      if (hitBubble && !win) {
+
+      const hitIndex = findHitBubbleIndex(pointy.x, pointy.y);
+      if (hitIndex !== -1 && applyHitToBubble(hitIndex) && !win) {
         bounceAfterBubbleHit();
       }
     }
 
-    function drawBubble(r, c, bubble) {
-      const cx = c * CELL + CELL / 2;
-      const cy = r * CELL + CELL / 2;
-      const radius = CELL * 0.42;
-      const color = bubble.color;
+    function update(dt) {
+      const subSteps = 3;
+      const stepDt = dt / subSteps;
 
-      const grad = ctx.createRadialGradient(cx - radius * 0.4, cy - radius * 0.45, radius * 0.15, cx, cy, radius);
+      for (let i = 0; i < subSteps; i += 1) {
+        updatePointy(stepDt);
+        updateBubbles(stepDt);
+      }
+    }
+
+    function drawBubble(bubble) {
+      const cx = bubble.x;
+      const cy = bubble.y;
+      const radius = BUBBLE_RADIUS;
+
+      const grad = ctx.createRadialGradient(
+        cx - radius * 0.4,
+        cy - radius * 0.45,
+        radius * 0.15,
+        cx,
+        cy,
+        radius
+      );
       grad.addColorStop(0, "#ffffff");
-      grad.addColorStop(0.35, color);
+      grad.addColorStop(0.35, bubble.color);
       grad.addColorStop(1, "rgba(0,0,0,0.25)");
 
       ctx.beginPath();
@@ -342,23 +485,6 @@
       ctx.fillStyle = "rgba(31, 162, 255, 0.12)";
       ctx.fillRect(0, LAUNCH_Y, canvas.width, canvas.height - LAUNCH_Y);
 
-      ctx.strokeStyle = "rgba(5, 46, 86, 0.22)";
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= COLS; i += 1) {
-        const x = i * CELL;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-      }
-      for (let i = 0; i <= ROWS; i += 1) {
-        const y = i * CELL;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-      }
-
       ctx.strokeStyle = "#1f4f7e";
       ctx.setLineDash([7, 7]);
       ctx.lineWidth = 2;
@@ -372,13 +498,9 @@
     function draw() {
       drawBoard();
 
-      for (let r = 0; r < ROWS; r += 1) {
-        for (let c = 0; c < COLS; c += 1) {
-          const bubble = bubbles[r][c];
-          if (bubble && bubble.hp > 0) {
-            drawBubble(r, c, bubble);
-          }
-        }
+      bubbles.sort((a, b) => a.y - b.y);
+      for (let i = 0; i < bubbles.length; i += 1) {
+        drawBubble(bubbles[i]);
       }
 
       drawPointy();
