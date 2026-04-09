@@ -220,17 +220,31 @@
       hintLabel.textContent = "Bouncing... pop every bubble";
     }
 
+    function applyColumnGravity(col) {
+      const survivors = [];
+      for (let row = 0; row < BUBBLE_ROWS; row += 1) {
+        const bubble = bubbles[row][col];
+        if (bubble && bubble.hp > 0) {
+          survivors.push(bubble);
+        }
+      }
+
+      for (let row = BUBBLE_ROWS - 1; row >= 0; row -= 1) {
+        bubbles[row][col] = survivors.length > 0 ? survivors.pop() : null;
+      }
+    }
+
     function blowBubbleAt(x, y) {
       const c = Math.floor(x / CELL);
       const r = Math.floor(y / CELL);
       if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
       const bubble = bubbles[r][c];
-      if (!bubble || !bubble.alive) return false;
+      if (!bubble || bubble.hp <= 0) return false;
 
       bubble.hp -= 1;
       if (bubble.hp <= 0) {
-        bubble.alive = false;
         bubbles[r][c] = null;
+        applyColumnGravity(c);
         bubblesLeft -= 1;
         statusLabel.textContent = `Bubbles left: ${bubblesLeft}`;
       }
@@ -361,7 +375,7 @@
       for (let r = 0; r < ROWS; r += 1) {
         for (let c = 0; c < COLS; c += 1) {
           const bubble = bubbles[r][c];
-          if (bubble && bubble.alive) {
+          if (bubble && bubble.hp > 0) {
             drawBubble(r, c, bubble);
           }
         }
