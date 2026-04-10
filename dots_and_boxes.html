@@ -46,6 +46,14 @@
       overflow: hidden;
     }
 
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
     .top {
       padding: 18px 20px;
       display: flex;
@@ -195,12 +203,166 @@
       padding: 20px;
     }
 
+    .screen-game {
+      min-height: min(92vh, 900px);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(20, 99, 93, 0.11), transparent 45%),
+        radial-gradient(circle at 80% 85%, rgba(177, 58, 45, 0.11), transparent 42%),
+        linear-gradient(150deg, #eef5f2, #f5f0ea);
+    }
+
+    .game-stage {
+      min-height: min(92vh, 900px);
+      display: grid;
+      place-items: center;
+      padding: 12px;
+      position: relative;
+    }
+
+    .game-hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      gap: 8px;
+      z-index: 3;
+    }
+
+    .game-zoom {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(37, 50, 56, 0.2);
+      box-shadow: 0 8px 18px rgba(37, 50, 56, 0.14);
+      font-size: 0.84rem;
+      color: var(--ink);
+    }
+
+    .game-side-ui {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 3;
+      display: grid;
+      gap: 6px;
+      justify-items: end;
+    }
+
+    .game-score {
+      display: grid;
+      gap: 6px;
+    }
+
+    .game-score-widget {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      box-shadow: 0 10px 22px rgba(39, 19, 89, 0.35);
+      color: #fff;
+      min-height: 34px;
+    }
+
+    .game-score-widget.human {
+      background: linear-gradient(135deg, rgba(11, 106, 98, 0.95), rgba(34, 143, 132, 0.95));
+    }
+
+    .game-score-widget.ai {
+      background: linear-gradient(135deg, rgba(163, 48, 33, 0.95), rgba(201, 80, 60, 0.95));
+    }
+
+    .score-seg {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .score-seg .target {
+      opacity: 0.86;
+      font-weight: 600;
+    }
+
+    .score-seg.total {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .score-seg .mini-chip {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      display: inline-block;
+    }
+
+    .game-zoom input[type="range"] {
+      width: 120px;
+      accent-color: var(--ink);
+    }
+
+    .game-zoom-value {
+      min-width: 40px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .hud-btn {
+      min-height: 0;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      box-shadow: 0 8px 18px rgba(37, 50, 56, 0.16);
+      background: rgba(37, 50, 56, 0.92);
+    }
+
+    .hud-btn.secondary {
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--ink);
+      border: 1px solid rgba(37, 50, 56, 0.2);
+    }
+
     .board-wrap {
       background: #fff;
       border: 1px solid rgba(37, 50, 56, 0.1);
       border-radius: var(--radius);
       padding: 18px;
       overflow: auto;
+      max-width: 100%;
+      max-height: calc(100vh - 42px);
+    }
+
+    .screen-game .board-wrap {
+      border-radius: 22px;
+      box-shadow: 0 14px 30px rgba(37, 50, 56, 0.16);
+    }
+
+    .rotate-hint {
+      display: none;
+      width: min(520px, 100%);
+      text-align: center;
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(37, 50, 56, 0.16);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--ink);
     }
 
     .board {
@@ -597,12 +759,56 @@
       #end-image {
         max-width: 140px;
       }
+
+      .game-hud {
+        top: 10px;
+        left: 10px;
+      }
+
+      .game-zoom {
+        padding: 8px 10px;
+        bottom: 10px;
+      }
+
+      .game-side-ui {
+        top: 10px;
+        right: 10px;
+      }
+
+      .game-zoom input[type="range"] {
+        width: 96px;
+      }
+
+      .game-score-widget {
+        min-height: 32px;
+      }
+
+      .score-seg {
+        font-size: 0.73rem;
+        padding: 4px 7px;
+      }
+
+      .hud-btn {
+        padding: 9px 12px;
+        font-size: 0.86rem;
+      }
+    }
+
+    @media (orientation: portrait) and (max-width: 1000px) {
+      .screen-game .board-wrap {
+        display: none;
+      }
+
+      .screen-game .rotate-hint {
+        display: block;
+      }
     }
   </style>
 </head>
 <body>
   <section class="shell">
-    <header class="top">
+    <section id="config-screen" class="screen screen-config active">
+      <header class="top">
       <div>
         <h1 class="title">Dots and Boxes</h1>
         <p class="subtitle">Claim more boxes than the agent. Complete a box, keep your turn.</p>
@@ -633,6 +839,7 @@
               <option value="random" selected>Random but Legal</option>
               <option value="minimax">Minimax (Stronger)</option>
               <option value="humanlike">Human-like Minimax</option>
+              <option value="objective">Objective Focus</option>
             </select>
           </label>
           <label class="pill" for="auto-logic">Auto Play Logic
@@ -640,6 +847,7 @@
               <option value="random" selected>Random but Legal</option>
               <option value="minimax">Minimax (Stronger)</option>
               <option value="humanlike">Human-like Minimax</option>
+              <option value="objective">Objective Focus</option>
             </select>
           </label>
           <button id="auto-play-toggle" type="button">Auto Play: Off</button>
@@ -681,13 +889,32 @@
           </section>
         </div>
       </div>
-    </header>
+      </header>
+    </section>
 
-    <main class="main">
-      <div class="board-wrap">
-        <div id="board" class="board" aria-label="Dots and Boxes board"></div>
-      </div>
-    </main>
+    <section id="game-screen" class="screen screen-game" aria-label="Game board screen">
+      <main class="game-stage">
+        <div class="game-hud" aria-label="In-game controls">
+          <button id="game-back" type="button" class="hud-btn secondary">Back to Config</button>
+          <button id="game-restart" type="button" class="hud-btn">Restart</button>
+        </div>
+        <div class="game-side-ui" aria-label="In-game score and zoom">
+          <div class="game-score" aria-live="polite">
+            <div id="game-human-widget" class="game-score-widget human"></div>
+            <div id="game-ai-widget" class="game-score-widget ai"></div>
+          </div>
+        </div>
+        <label class="game-zoom" for="game-zoom">
+          Zoom
+          <input id="game-zoom" type="range" min="50" max="200" step="5" value="100" aria-label="Board zoom percentage in game" />
+          <span id="game-zoom-value" class="game-zoom-value">100%</span>
+        </label>
+        <div class="board-wrap">
+          <div id="board" class="board" aria-label="Dots and Boxes board"></div>
+        </div>
+        <div class="rotate-hint" aria-live="polite">Rotate your device to landscape to play.</div>
+      </main>
+    </section>
   </section>
 
   <div id="end-modal" class="end-modal" role="dialog" aria-modal="true" aria-label="Game result">
@@ -742,6 +969,14 @@
       const objectiveCardEl = document.getElementById("objective-card");
       const objectiveHintEl = document.getElementById("objective-hint");
       const objectiveGridEl = document.getElementById("objective-grid");
+      const configScreenEl = document.getElementById("config-screen");
+      const gameScreenEl = document.getElementById("game-screen");
+      const gameBackEl = document.getElementById("game-back");
+      const gameRestartEl = document.getElementById("game-restart");
+      const gameZoomEl = document.getElementById("game-zoom");
+      const gameZoomValueEl = document.getElementById("game-zoom-value");
+      const gameHumanWidgetEl = document.getElementById("game-human-widget");
+      const gameAiWidgetEl = document.getElementById("game-ai-widget");
 
     let boxRows = 5;
     let boxCols = 5;
@@ -761,6 +996,20 @@
     let autoPlayEnabled = false;
     let turnTimerId = null;
     let confettiRaf = null;
+    let currentScreen = "config";
+
+    function showScreen(name) {
+      currentScreen = name;
+      configScreenEl.classList.toggle("active", name === "config");
+      gameScreenEl.classList.toggle("active", name === "game");
+      if (name !== "game" && turnTimerId !== null) {
+        window.clearTimeout(turnTimerId);
+        turnTimerId = null;
+      }
+      if (name === "game") {
+        maybeScheduleTurn();
+      }
+    }
 
     function hideEndModal() {
       endModalEl.classList.remove("open");
@@ -1136,8 +1385,7 @@
 
         rowsEl.value = String(parsed.height);
         colsEl.value = String(parsed.width);
-        newGame();
-        setStatus(`Loaded hidden colors from ${file.name}.`);
+        setStatus(`Loaded hidden colors from ${file.name}. Press New Game to start.`);
       } catch (error) {
         artFileNameEl.textContent = "Invalid file";
         clearPreview("Preview unavailable");
@@ -1179,6 +1427,8 @@
       edgeSizeEl.value = String(edgePx);
       zoomEl.value = String(zoomPercent);
       zoomValueEl.textContent = `${zoomPercent}%`;
+      if (gameZoomEl) gameZoomEl.value = String(zoomPercent);
+      if (gameZoomValueEl) gameZoomValueEl.textContent = `${zoomPercent}%`;
 
       const cell = getDisplayCellPx();
       const dot = clamp(Math.round(cell * 0.33), 4, 18);
@@ -1242,6 +1492,29 @@
         for (const owner of row) {
           if (owner === null) return false;
         }
+      }
+      return true;
+    }
+
+    function countCapturedTokensByPlayerInState(state, player) {
+      const counts = {};
+      for (let r = 0; r < state.boxRows; r += 1) {
+        for (let c = 0; c < state.boxCols; c += 1) {
+          if (state.boxes[r][c] !== player) continue;
+          const token = hiddenBoxTokens[r]?.[c] || "_";
+          counts[token] = (counts[token] || 0) + 1;
+        }
+      }
+      return counts;
+    }
+
+    function hasMetObjectivesInState(state, player) {
+      if (gameModeEl.value !== "objective") return false;
+      if (!requiredObjectivesExist()) return false;
+      const counts = countCapturedTokensByPlayerInState(state, player);
+      for (const [token, needed] of Object.entries(objectiveTargets)) {
+        if (needed <= 0) continue;
+        if ((counts[token] || 0) < needed) return false;
       }
       return true;
     }
@@ -1459,6 +1732,32 @@
       return score;
     }
 
+    function evaluateStateObjective(state) {
+      if (gameModeEl.value !== "objective" || !requiredObjectivesExist()) {
+        return evaluateStateClassic(state, AI);
+      }
+
+      const aiCounts = countCapturedTokensByPlayerInState(state, AI);
+      const humanCounts = countCapturedTokensByPlayerInState(state, HUMAN);
+      let score = scoreDiffInState(state) * 20;
+
+      if (hasMetObjectivesInState(state, AI)) return 100000;
+      if (hasMetObjectivesInState(state, HUMAN)) return -100000;
+
+      for (const [token, needed] of Object.entries(objectiveTargets)) {
+        if (needed <= 0) continue;
+        const ai = aiCounts[token] || 0;
+        const human = humanCounts[token] || 0;
+        const aiProgress = Math.min(ai, needed) / needed;
+        const humanProgress = Math.min(human, needed) / needed;
+        score += (aiProgress - humanProgress) * 260;
+        score -= Math.max(0, needed - ai) * 16;
+        score += Math.max(0, needed - human) * 10;
+      }
+
+      return score;
+    }
+
     function minimax(state, depth, alpha, beta, currentPlayer, evaluateFn) {
       if (depth === 0 || allBoxesClaimedInState(state)) {
         return { value: evaluateFn(state, currentPlayer), move: null };
@@ -1512,6 +1811,14 @@
         if (remaining <= 12) depth = 7;
         else if (remaining <= 20) depth = 6;
         else if (remaining <= 32) depth = 4;
+        return depth;
+      }
+
+      if (mode === "objective") {
+        let depth = 3;
+        if (remaining <= 12) depth = 7;
+        else if (remaining <= 20) depth = 5;
+        else if (remaining <= 34) depth = 4;
         return depth;
       }
 
@@ -1570,6 +1877,41 @@
       return selected.move;
     }
 
+    function pickObjectiveModeMove(state) {
+      const moves = legalMovesFromState(state);
+      if (moves.length === 0) return null;
+      if (gameModeEl.value !== "objective" || !requiredObjectivesExist()) {
+        return pickMinimaxMove(state);
+      }
+
+      if (Math.max(state.boxRows, state.boxCols) >= 10) {
+        let bestMove = moves[0];
+        let bestValue = -Infinity;
+        for (const move of moves) {
+          const nextState = {
+            boxRows: state.boxRows,
+            boxCols: state.boxCols,
+            dotsRows: state.dotsRows,
+            dotsCols: state.dotsCols,
+            hEdges: state.hEdges.map((row) => row.slice()),
+            vEdges: state.vEdges.map((row) => row.slice()),
+            boxes: state.boxes.map((row) => row.slice()),
+          };
+          applyMoveToState(nextState, move, AI);
+          const v = evaluateStateObjective(nextState);
+          if (v > bestValue) {
+            bestValue = v;
+            bestMove = move;
+          }
+        }
+        return bestMove;
+      }
+
+      const depth = getMinimaxDepth(moves.length, "objective");
+      const result = minimax(state, depth, -Infinity, Infinity, AI, evaluateStateObjective);
+      return result.move;
+    }
+
     function swapOwner(owner) {
       if (owner === HUMAN) return AI;
       if (owner === AI) return HUMAN;
@@ -1601,6 +1943,9 @@
       if (logic === "humanlike") {
         return pickHumanLikeMinimaxMove(state);
       }
+      if (logic === "objective") {
+        return pickObjectiveModeMove(state);
+      }
       return moves[Math.floor(Math.random() * moves.length)] || null;
     }
 
@@ -1609,6 +1954,8 @@
         aiHintEl.textContent = "Click an available edge to draw a line. The agent is using minimax with look-ahead (auto-simplifies on very large boards).";
       } else if (aiLogicEl.value === "humanlike") {
         aiHintEl.textContent = "Click an available edge to draw a line. The agent uses a human-like minimax style with safer midgame choices (auto-simplifies on very large boards).";
+      } else if (aiLogicEl.value === "objective") {
+        aiHintEl.textContent = "Click an available edge to draw a line. The agent is prioritizing required objective colors.";
       } else {
         aiHintEl.textContent = "Click an available edge to draw a line. The agent currently chooses random legal moves.";
       }
@@ -1694,6 +2041,25 @@
       }
     }
 
+    function getActiveObjectiveTokens() {
+      if (!loadedArt || !Array.isArray(loadedArt.paletteOrder)) return [];
+      return loadedArt.paletteOrder.filter((token) => (objectiveTargets[token] || 0) > 0);
+    }
+
+    function renderGameScoreWidget(container, player, label) {
+      const total = scoreOf(player);
+      const tokens = gameModeEl.value === "objective" ? getActiveObjectiveTokens() : [];
+      const counts = tokens.length > 0 ? countCapturedTokensByPlayer(player) : {};
+
+      const segments = [`<span class="score-seg total"><strong>${label}</strong> ${total}</span>`];
+      for (const token of tokens) {
+        const tokenColor = loadedArt?.palette?.[token] || "rgba(255,255,255,0.7)";
+        const target = objectiveTargets[token] || 0;
+        segments.push(`<span class="score-seg objective"><span class="mini-chip" style="background:${tokenColor}"></span>${counts[token] || 0}<span class="target">/${target}</span></span>`);
+      }
+      container.innerHTML = segments.join("");
+    }
+
     function refreshBoardUI() {
       for (const edge of boardEl.querySelectorAll(".hedge,.vedge")) {
         const type = edge.dataset.type;
@@ -1722,6 +2088,8 @@
 
       humanScoreEl.textContent = String(scoreOf(HUMAN));
       aiScoreEl.textContent = String(scoreOf(AI));
+      renderGameScoreWidget(gameHumanWidgetEl, HUMAN, "You");
+      renderGameScoreWidget(gameAiWidgetEl, AI, "Agent");
       refreshObjectiveScoreUI();
     }
 
@@ -1818,7 +2186,7 @@
         window.clearTimeout(turnTimerId);
         turnTimerId = null;
       }
-      if (gameOver) return;
+      if (gameOver || currentScreen !== "game") return;
 
       if (currentPlayer === AI) {
         turnTimerId = window.setTimeout(() => {
@@ -1859,6 +2227,7 @@
       buildBoardUI();
       refreshBoardUI();
       setStatus();
+      showScreen("game");
       maybeScheduleTurn();
     }
 
@@ -1869,6 +2238,14 @@
     edgeSizeEl.addEventListener("input", applyBoardSizing);
     zoomEl.addEventListener("input", applyBoardSizing);
     zoomEl.addEventListener("change", applyBoardSizing);
+    gameZoomEl.addEventListener("input", () => {
+      zoomEl.value = gameZoomEl.value;
+      applyBoardSizing();
+    });
+    gameZoomEl.addEventListener("change", () => {
+      zoomEl.value = gameZoomEl.value;
+      applyBoardSizing();
+    });
     aiLogicEl.addEventListener("change", updateHintForAiLogic);
     gameModeEl.addEventListener("change", () => {
       const objectiveMode = gameModeEl.value === "objective";
@@ -1888,12 +2265,15 @@
     endModalEl.addEventListener("click", (event) => {
       if (event.target === endModalEl) hideEndModal();
     });
+    gameBackEl.addEventListener("click", () => showScreen("config"));
+    gameRestartEl.addEventListener("click", () => newGame());
     applyBoardSizing();
     clearPreview();
     buildObjectiveInputsFromLoadedArt();
     objectiveCardEl.style.display = "none";
     updateHintForAiLogic();
-    newGame();
+    setStatus("Configure the game, then press New Game.");
+    showScreen("config");
   </script>
 </body>
 </html>
