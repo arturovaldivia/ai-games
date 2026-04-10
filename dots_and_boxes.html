@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dots and Boxes</title>
+  <style>
+    :root {
+      --bg-1: #f2efe8;
+      --bg-2: #d7ece4;
+      --panel: #fffdf8;
+      --ink: #253238;
+      --muted: #677176;
+      --human: #14635d;
+      --ai: #b13a2d;
+      --line-empty: #9eaaa7;
+      --dot: #26353a;
+      --shadow: 0 10px 30px rgba(37, 50, 56, 0.16);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Avenir Next", "Futura", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 18%, rgba(177, 58, 45, 0.14), transparent 42%),
+        radial-gradient(circle at 90% 82%, rgba(20, 99, 93, 0.16), transparent 36%),
+        linear-gradient(140deg, var(--bg-1), var(--bg-2));
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .shell {
+      width: min(950px, 100%);
+      background: var(--panel);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(37, 50, 56, 0.08);
+      overflow: hidden;
+    }
+
+    .top {
+      padding: 18px 20px;
+      display: flex;
+      gap: 14px;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(37, 50, 56, 0.1);
+      background: linear-gradient(90deg, rgba(20, 99, 93, 0.06), rgba(177, 58, 45, 0.06));
+    }
+
+    .title {
+      margin: 0;
+      letter-spacing: 0.04em;
+      font-size: 1.35rem;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      border: 1px solid rgba(37, 50, 56, 0.2);
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.92rem;
+      color: var(--ink);
+    }
+
+    button {
+      border: none;
+      background: var(--ink);
+      color: #fff;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: transform 140ms ease, opacity 140ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+      opacity: 0.9;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 22px;
+      padding: 20px;
+    }
+
+    .board-wrap {
+      background: #fff;
+      border: 1px solid rgba(37, 50, 56, 0.1);
+      border-radius: var(--radius);
+      padding: 18px;
+      overflow: auto;
+    }
+
+    .board {
+      display: grid;
+      width: max-content;
+      margin: 0 auto;
+      animation: fade-slide 360ms ease both;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--dot);
+      justify-self: center;
+      align-self: center;
+      z-index: 2;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+    }
+
+    .hedge,
+    .vedge {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      padding: 0;
+    }
+
+    .hedge::before,
+    .vedge::before {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      background: var(--line-empty);
+      opacity: 0.3;
+      transition: opacity 120ms ease, transform 120ms ease, background 120ms ease;
+    }
+
+    .hedge::before {
+      left: 4px;
+      right: 4px;
+      top: 50%;
+      height: 6px;
+      transform: translateY(-50%);
+    }
+
+    .vedge::before {
+      top: 4px;
+      bottom: 4px;
+      left: 50%;
+      width: 6px;
+      transform: translateX(-50%);
+    }
+
+    .hedge.open:hover::before,
+    .vedge.open:hover::before {
+      opacity: 0.68;
+    }
+
+    .hedge.claimed-human::before,
+    .vedge.claimed-human::before {
+      opacity: 1;
+      background: var(--human);
+      box-shadow: 0 0 0 2px rgba(20, 99, 93, 0.1);
+    }
+
+    .hedge.claimed-ai::before,
+    .vedge.claimed-ai::before {
+      opacity: 1;
+      background: var(--ai);
+      box-shadow: 0 0 0 2px rgba(177, 58, 45, 0.1);
+    }
+
+    .box {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      align-self: center;
+      justify-self: center;
+      background: rgba(37, 50, 56, 0.03);
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .box.human {
+      background: color-mix(in srgb, var(--human) 32%, white);
+      transform: scale(0.96);
+    }
+
+    .box.ai {
+      background: color-mix(in srgb, var(--ai) 33%, white);
+      transform: scale(0.96);
+    }
+
+    .side {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .card {
+      border: 1px solid rgba(37, 50, 56, 0.12);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: #fff;
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 1.02rem;
+      letter-spacing: 0.02em;
+    }
+
+    .score-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .score-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-weight: 600;
+      background: rgba(37, 50, 56, 0.04);
+    }
+
+    .score-line.human {
+      color: var(--human);
+    }
+
+    .score-line.ai {
+      color: var(--ai);
+    }
+
+    .status {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      color: var(--ink);
+      min-height: 40px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    @keyframes fade-slide {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 920px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .title {
+        font-size: 1.1rem;
+      }
+
+      .side {
+        grid-template-columns: 1fr;
+      }
+
+      .top {
+        padding: 14px;
+      }
+
+      .main {
+        padding: 14px;
+      }
+
+      .board-wrap {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="shell">
+    <header class="top">
+      <div>
+        <h1 class="title">Dots and Boxes</h1>
+        <p class="subtitle">Claim more boxes than the agent. Complete a box, keep your turn.</p>
+      </div>
+      <div class="controls">
+        <label class="pill" for="size">Grid
+          <select id="size">
+            <option value="4">4 x 4 boxes</option>
+            <option value="5" selected>5 x 5 boxes</option>
+            <option value="6">6 x 6 boxes</option>
+          </select>
+        </label>
+        <label class="pill" for="ai-logic">Agent
+          <select id="ai-logic">
+            <option value="random" selected>Random but Legal</option>
+            <option value="minimax">Minimax (Stronger)</option>
+          </select>
+        </label>
+        <button id="new-game" type="button">New Game</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="board-wrap">
+        <div id="board" class="board" aria-label="Dots and Boxes board"></div>
+      </div>
+
+      <aside class="side">
+        <section class="card">
+          <h2>Score</h2>
+          <div class="score-grid">
+            <div class="score-line human">You <span id="human-score">0</span></div>
+            <div class="score-line ai">Agent <span id="ai-score">0</span></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Turn</h2>
+          <p class="status" id="status"></p>
+          <p class="hint" id="ai-hint">Click an available edge to draw a line. The agent currently chooses random legal moves.</p>
+        </section>
+      </aside>
+    </main>
+  </section>
+
+  <script>
+    const HUMAN = "human";
+    const AI = "ai";
+
+    const boardEl = document.getElementById("board");
+    const statusEl = document.getElementById("status");
+    const humanScoreEl = document.getElementById("human-score");
+    const aiScoreEl = document.getElementById("ai-score");
+    const sizeEl = document.getElementById("size");
+    const aiLogicEl = document.getElementById("ai-logic");
+    const newGameEl = document.getElementById("new-game");
+    const aiHintEl = document.getElementById("ai-hint");
+
+    let dots = 6;
+    let hEdges = [];
+    let vEdges = [];
+    let boxes = [];
+    let currentPlayer = HUMAN;
+    let gameOver = false;
+
+    function make2D(rows, cols, value = null) {
+      return Array.from({ length: rows }, () => Array(cols).fill(value));
+    }
+
+    function setupState(boxesPerSide) {
+      dots = boxesPerSide + 1;
+      hEdges = make2D(dots, dots - 1);
+      vEdges = make2D(dots - 1, dots);
+      boxes = make2D(dots - 1, dots - 1);
+      currentPlayer = HUMAN;
+      gameOver = false;
+    }
+
+    function gridColumns() {
+      return `repeat(${dots * 2 - 1}, 36px)`;
+    }
+
+    function isEdgeClaimed(type, row, col) {
+      return type === "h" ? hEdges[row][col] !== null : vEdges[row][col] !== null;
+    }
+
+    function claimEdge(type, row, col, player) {
+      if (type === "h") hEdges[row][col] = player;
+      else vEdges[row][col] = player;
+    }
+
+    function checkAndClaimBox(r, c, player) {
+      if (boxes[r][c] !== null) return false;
+      const top = hEdges[r][c] !== null;
+      const bottom = hEdges[r + 1][c] !== null;
+      const left = vEdges[r][c] !== null;
+      const right = vEdges[r][c + 1] !== null;
+      if (top && bottom && left && right) {
+        boxes[r][c] = player;
+        return true;
+      }
+      return false;
+    }
+
+    function resolveBoxesFromEdge(type, row, col, player) {
+      let made = 0;
+      if (type === "h") {
+        if (row > 0 && checkAndClaimBox(row - 1, col, player)) made += 1;
+        if (row < dots - 1 && checkAndClaimBox(row, col, player)) made += 1;
+      } else {
+        if (col > 0 && checkAndClaimBox(row, col - 1, player)) made += 1;
+        if (col < dots - 1 && checkAndClaimBox(row, col, player)) made += 1;
+      }
+      return made;
+    }
+
+    function scoreOf(player) {
+      let total = 0;
+      for (const row of boxes) {
+        for (const owner of row) {
+          if (owner === player) total += 1;
+        }
+      }
+      return total;
+    }
+
+    function allBoxesClaimed() {
+      for (const row of boxes) {
+        for (const owner of row) {
+          if (owner === null) return false;
+        }
+      }
+      return true;
+    }
+
+    function legalMoves() {
+      const moves = [];
+      for (let r = 0; r < dots; r += 1) {
+        for (let c = 0; c < dots - 1; c += 1) {
+          if (!hEdges[r][c]) moves.push({ type: "h", row: r, col: c });
+        }
+      }
+      for (let r = 0; r < dots - 1; r += 1) {
+        for (let c = 0; c < dots; c += 1) {
+          if (!vEdges[r][c]) moves.push({ type: "v", row: r, col: c });
+        }
+      }
+      return moves;
+    }
+
+    function cloneStateFromCurrent() {
+      return {
+        dots,
+        hEdges: hEdges.map((row) => row.slice()),
+        vEdges: vEdges.map((row) => row.slice()),
+        boxes: boxes.map((row) => row.slice()),
+      };
+    }
+
+    function legalMovesFromState(state) {
+      const moves = [];
+      for (let r = 0; r < state.dots; r += 1) {
+        for (let c = 0; c < state.dots - 1; c += 1) {
+          if (!state.hEdges[r][c]) moves.push({ type: "h", row: r, col: c });
+        }
+      }
+      for (let r = 0; r < state.dots - 1; r += 1) {
+        for (let c = 0; c < state.dots; c += 1) {
+          if (!state.vEdges[r][c]) moves.push({ type: "v", row: r, col: c });
+        }
+      }
+      return moves;
+    }
+
+    function checkAndClaimBoxInState(state, r, c, player) {
+      if (state.boxes[r][c] !== null) return false;
+      const top = state.hEdges[r][c] !== null;
+      const bottom = state.hEdges[r + 1][c] !== null;
+      const left = state.vEdges[r][c] !== null;
+      const right = state.vEdges[r][c + 1] !== null;
+      if (top && bottom && left && right) {
+        state.boxes[r][c] = player;
+        return true;
+      }
+      return false;
+    }
+
+    function resolveBoxesFromEdgeInState(state, type, row, col, player) {
+      let made = 0;
+      if (type === "h") {
+        if (row > 0 && checkAndClaimBoxInState(state, row - 1, col, player)) made += 1;
+        if (row < state.dots - 1 && checkAndClaimBoxInState(state, row, col, player)) made += 1;
+      } else {
+        if (col > 0 && checkAndClaimBoxInState(state, row, col - 1, player)) made += 1;
+        if (col < state.dots - 1 && checkAndClaimBoxInState(state, row, col, player)) made += 1;
+      }
+      return made;
+    }
+
+    function applyMoveToState(state, move, player) {
+      if (move.type === "h") state.hEdges[move.row][move.col] = player;
+      else state.vEdges[move.row][move.col] = player;
+      const boxesWon = resolveBoxesFromEdgeInState(state, move.type, move.row, move.col, player);
+      const nextPlayer = boxesWon > 0 ? player : (player === HUMAN ? AI : HUMAN);
+      return { boxesWon, nextPlayer };
+    }
+
+    function allBoxesClaimedInState(state) {
+      for (const row of state.boxes) {
+        for (const owner of row) {
+          if (owner === null) return false;
+        }
+      }
+      return true;
+    }
+
+    function scoreDiffInState(state) {
+      let ai = 0;
+      let human = 0;
+      for (const row of state.boxes) {
+        for (const owner of row) {
+          if (owner === AI) ai += 1;
+          else if (owner === HUMAN) human += 1;
+        }
+      }
+      return ai - human;
+    }
+
+    function countEdgesAroundBoxInState(state, r, c) {
+      let count = 0;
+      if (state.hEdges[r][c] !== null) count += 1;
+      if (state.hEdges[r + 1][c] !== null) count += 1;
+      if (state.vEdges[r][c] !== null) count += 1;
+      if (state.vEdges[r][c + 1] !== null) count += 1;
+      return count;
+    }
+
+    function evaluateState(state, currentPlayer) {
+      let score = scoreDiffInState(state) * 100;
+
+      for (let r = 0; r < state.dots - 1; r += 1) {
+        for (let c = 0; c < state.dots - 1; c += 1) {
+          if (state.boxes[r][c] !== null) continue;
+          const edgeCount = countEdgesAroundBoxInState(state, r, c);
+          if (edgeCount === 3) {
+            score += currentPlayer === AI ? 8 : -8;
+          } else if (edgeCount === 2) {
+            score += 1;
+          } else if (edgeCount <= 1) {
+            score += 0.2;
+          }
+        }
+      }
+
+      return score;
+    }
+
+    function minimax(state, depth, alpha, beta, currentPlayer) {
+      if (depth === 0 || allBoxesClaimedInState(state)) {
+        return { value: evaluateState(state, currentPlayer), move: null };
+      }
+
+      const moves = legalMovesFromState(state);
+      if (moves.length === 0) {
+        return { value: evaluateState(state, currentPlayer), move: null };
+      }
+
+      const maximizing = currentPlayer === AI;
+      let bestValue = maximizing ? -Infinity : Infinity;
+      let bestMove = moves[0];
+
+      for (const move of moves) {
+        const nextState = {
+          dots: state.dots,
+          hEdges: state.hEdges.map((row) => row.slice()),
+          vEdges: state.vEdges.map((row) => row.slice()),
+          boxes: state.boxes.map((row) => row.slice()),
+        };
+        const result = applyMoveToState(nextState, move, currentPlayer);
+        const child = minimax(nextState, depth - 1, alpha, beta, result.nextPlayer);
+
+        if (maximizing) {
+          if (child.value > bestValue) {
+            bestValue = child.value;
+            bestMove = move;
+          }
+          alpha = Math.max(alpha, bestValue);
+        } else {
+          if (child.value < bestValue) {
+            bestValue = child.value;
+            bestMove = move;
+          }
+          beta = Math.min(beta, bestValue);
+        }
+
+        if (beta <= alpha) break;
+      }
+
+      return { value: bestValue, move: bestMove };
+    }
+
+    function pickMinimaxMove() {
+      const state = cloneStateFromCurrent();
+      const remaining = legalMovesFromState(state).length;
+      let depth = 3;
+      if (remaining <= 14) depth = 8;
+      else if (remaining <= 22) depth = 6;
+      else if (remaining <= 34) depth = 4;
+
+      const result = minimax(state, depth, -Infinity, Infinity, AI);
+      return result.move;
+    }
+
+    function updateHintForAiLogic() {
+      if (aiLogicEl.value === "minimax") {
+        aiHintEl.textContent = "Click an available edge to draw a line. The agent is using minimax with look-ahead.";
+      } else {
+        aiHintEl.textContent = "Click an available edge to draw a line. The agent currently chooses random legal moves.";
+      }
+    }
+
+    function finishIfNeeded() {
+      if (!allBoxesClaimed()) return false;
+      gameOver = true;
+      const human = scoreOf(HUMAN);
+      const ai = scoreOf(AI);
+      if (human > ai) {
+        statusEl.textContent = `Game over. You win ${human} to ${ai}.`;
+      } else if (ai > human) {
+        statusEl.textContent = `Game over. Agent wins ${ai} to ${human}.`;
+      } else {
+        statusEl.textContent = `Game over. Draw ${human}-${ai}.`;
+      }
+      return true;
+    }
+
+    function setStatus(extra = "") {
+      if (gameOver) return;
+      const base = currentPlayer === HUMAN ? "Your turn." : "Agent is choosing a move...";
+      statusEl.textContent = `${base}${extra ? ` ${extra}` : ""}`;
+    }
+
+    function refreshBoardUI() {
+      for (const edge of boardEl.querySelectorAll(".hedge,.vedge")) {
+        const type = edge.dataset.type;
+        const row = Number(edge.dataset.row);
+        const col = Number(edge.dataset.col);
+        edge.classList.remove("claimed-human", "claimed-ai", "open");
+
+        const owner = type === "h" ? hEdges[row][col] : vEdges[row][col];
+        if (owner === HUMAN) edge.classList.add("claimed-human");
+        else if (owner === AI) edge.classList.add("claimed-ai");
+        else edge.classList.add("open");
+      }
+
+      for (const boxEl of boardEl.querySelectorAll(".box")) {
+        const row = Number(boxEl.dataset.row);
+        const col = Number(boxEl.dataset.col);
+        boxEl.classList.remove("human", "ai");
+        const owner = boxes[row][col];
+        if (owner) boxEl.classList.add(owner);
+      }
+
+      humanScoreEl.textContent = String(scoreOf(HUMAN));
+      aiScoreEl.textContent = String(scoreOf(AI));
+    }
+
+    function buildBoardUI() {
+      boardEl.innerHTML = "";
+      boardEl.style.gridTemplateColumns = gridColumns();
+
+      for (let r = 0; r < dots * 2 - 1; r += 1) {
+        for (let c = 0; c < dots * 2 - 1; c += 1) {
+          const evenR = r % 2 === 0;
+          const evenC = c % 2 === 0;
+
+          if (evenR && evenC) {
+            const dot = document.createElement("div");
+            dot.className = "dot";
+            boardEl.appendChild(dot);
+          } else if (evenR && !evenC) {
+            const h = document.createElement("button");
+            h.type = "button";
+            h.className = "hedge open";
+            h.dataset.type = "h";
+            h.dataset.row = String(r / 2);
+            h.dataset.col = String((c - 1) / 2);
+            h.addEventListener("click", onHumanMove);
+            boardEl.appendChild(h);
+          } else if (!evenR && evenC) {
+            const v = document.createElement("button");
+            v.type = "button";
+            v.className = "vedge open";
+            v.dataset.type = "v";
+            v.dataset.row = String((r - 1) / 2);
+            v.dataset.col = String(c / 2);
+            v.addEventListener("click", onHumanMove);
+            boardEl.appendChild(v);
+          } else {
+            const b = document.createElement("div");
+            b.className = "box";
+            b.dataset.row = String((r - 1) / 2);
+            b.dataset.col = String((c - 1) / 2);
+            boardEl.appendChild(b);
+          }
+        }
+      }
+    }
+
+    function applyMove(type, row, col, player) {
+      claimEdge(type, row, col, player);
+      const boxesWon = resolveBoxesFromEdge(type, row, col, player);
+      refreshBoardUI();
+
+      if (finishIfNeeded()) return;
+      if (boxesWon === 0) {
+        currentPlayer = player === HUMAN ? AI : HUMAN;
+      }
+      const bonusText = boxesWon > 0 ? `${player === HUMAN ? "You" : "Agent"} completed ${boxesWon} box${boxesWon > 1 ? "es" : ""}.` : "";
+      setStatus(bonusText);
+
+      if (!gameOver && currentPlayer === AI) {
+        window.setTimeout(playAiTurn, 420);
+      }
+    }
+
+    function onHumanMove(event) {
+      if (gameOver || currentPlayer !== HUMAN) return;
+      const edge = event.currentTarget;
+      const type = edge.dataset.type;
+      const row = Number(edge.dataset.row);
+      const col = Number(edge.dataset.col);
+      if (isEdgeClaimed(type, row, col)) return;
+      applyMove(type, row, col, HUMAN);
+    }
+
+    function playAiTurn() {
+      if (gameOver || currentPlayer !== AI) return;
+      const moves = legalMoves();
+      if (moves.length === 0) {
+        finishIfNeeded();
+        return;
+      }
+
+      let pick;
+      if (aiLogicEl.value === "minimax") {
+        pick = pickMinimaxMove();
+      }
+      if (!pick) {
+        pick = moves[Math.floor(Math.random() * moves.length)];
+      }
+      applyMove(pick.type, pick.row, pick.col, AI);
+    }
+
+    function newGame() {
+      const size = Number(sizeEl.value);
+      setupState(size);
+      buildBoardUI();
+      refreshBoardUI();
+      setStatus();
+    }
+
+    newGameEl.addEventListener("click", newGame);
+    sizeEl.addEventListener("change", newGame);
+    aiLogicEl.addEventListener("change", updateHintForAiLogic);
+    updateHintForAiLogic();
+    newGame();
+  </script>
+</body>
+</html>
