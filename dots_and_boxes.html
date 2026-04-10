@@ -51,7 +51,7 @@
       display: flex;
       gap: 14px;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       flex-wrap: wrap;
       border-bottom: 1px solid rgba(37, 50, 56, 0.1);
       background: linear-gradient(90deg, rgba(20, 99, 93, 0.06), rgba(177, 58, 45, 0.06));
@@ -77,6 +77,20 @@
       flex-wrap: wrap;
     }
 
+    .top-right {
+      display: grid;
+      gap: 10px;
+      justify-items: end;
+      width: min(100%, 620px);
+    }
+
+    .status-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 10px;
+    }
+
     .pill {
       border: 1px solid rgba(37, 50, 56, 0.2);
       background: #fff;
@@ -84,6 +98,32 @@
       padding: 8px 14px;
       font-size: 0.92rem;
       color: var(--ink);
+    }
+
+    .pill input,
+    .pill select {
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      min-width: 58px;
+      outline: none;
+      margin-left: 6px;
+    }
+
+    .pill input[type="range"] {
+      min-width: 110px;
+      accent-color: var(--ink);
+      vertical-align: middle;
+    }
+
+    .zoom-value {
+      font-size: 0.86rem;
+      color: var(--muted);
+      margin-left: 4px;
+      min-width: 42px;
+      display: inline-block;
+      text-align: right;
     }
 
     button {
@@ -107,9 +147,6 @@
     }
 
     .main {
-      display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 22px;
       padding: 20px;
     }
 
@@ -122,6 +159,11 @@
     }
 
     .board {
+      --cell-size: 36px;
+      --dot-size: 12px;
+      --line-thickness: 6px;
+      --line-pad: 4px;
+      --box-size: 36px;
       display: grid;
       width: max-content;
       margin: 0 auto;
@@ -129,8 +171,8 @@
     }
 
     .dot {
-      width: 12px;
-      height: 12px;
+      width: var(--dot-size);
+      height: var(--dot-size);
       border-radius: 50%;
       background: var(--dot);
       justify-self: center;
@@ -159,18 +201,18 @@
     }
 
     .hedge::before {
-      left: 4px;
-      right: 4px;
+      left: var(--line-pad);
+      right: var(--line-pad);
       top: 50%;
-      height: 6px;
+      height: var(--line-thickness);
       transform: translateY(-50%);
     }
 
     .vedge::before {
-      top: 4px;
-      bottom: 4px;
+      top: var(--line-pad);
+      bottom: var(--line-pad);
       left: 50%;
-      width: 6px;
+      width: var(--line-thickness);
       transform: translateX(-50%);
     }
 
@@ -194,8 +236,8 @@
     }
 
     .box {
-      width: 36px;
-      height: 36px;
+      width: var(--box-size);
+      height: var(--box-size);
       border-radius: 9px;
       align-self: center;
       justify-self: center;
@@ -211,12 +253,6 @@
     .box.ai {
       background: color-mix(in srgb, var(--ai) 33%, white);
       transform: scale(0.96);
-    }
-
-    .side {
-      display: grid;
-      gap: 12px;
-      align-content: start;
     }
 
     .card {
@@ -270,6 +306,10 @@
       line-height: 1.45;
     }
 
+    .hint.compact {
+      margin-top: 6px;
+    }
+
     @keyframes fade-slide {
       from {
         opacity: 0;
@@ -282,22 +322,23 @@
     }
 
     @media (max-width: 920px) {
-      .main {
-        grid-template-columns: 1fr;
+      .top {
+        align-items: stretch;
       }
 
-      .side {
-        grid-template-columns: 1fr 1fr;
+      .top-right {
+        justify-items: stretch;
+        width: 100%;
+      }
+
+      .status-row {
+        grid-template-columns: 1fr;
       }
     }
 
     @media (max-width: 620px) {
       .title {
         font-size: 1.1rem;
-      }
-
-      .side {
-        grid-template-columns: 1fr;
       }
 
       .top {
@@ -321,21 +362,50 @@
         <h1 class="title">Dots and Boxes</h1>
         <p class="subtitle">Claim more boxes than the agent. Complete a box, keep your turn.</p>
       </div>
-      <div class="controls">
-        <label class="pill" for="size">Grid
-          <select id="size">
-            <option value="4">4 x 4 boxes</option>
-            <option value="5" selected>5 x 5 boxes</option>
-            <option value="6">6 x 6 boxes</option>
-          </select>
-        </label>
-        <label class="pill" for="ai-logic">Agent
-          <select id="ai-logic">
-            <option value="random" selected>Random but Legal</option>
-            <option value="minimax">Minimax (Stronger)</option>
-          </select>
-        </label>
-        <button id="new-game" type="button">New Game</button>
+      <div class="top-right">
+        <div class="controls">
+          <label class="pill" for="size">Grid
+            <input id="size" type="number" min="2" max="30" step="1" value="5" list="size-suggestions" aria-label="Board size in boxes per side" />
+            <datalist id="size-suggestions">
+              <option value="4"></option>
+              <option value="5"></option>
+              <option value="6"></option>
+              <option value="20"></option>
+              <option value="21"></option>
+            </datalist>
+          </label>
+          <label class="pill" for="edge-size">Edge px
+            <input id="edge-size" type="number" min="8" max="60" step="1" value="36" aria-label="Edge size in pixels" />
+          </label>
+          <label class="pill" for="zoom">Zoom
+            <input id="zoom" type="range" min="50" max="200" step="5" value="100" aria-label="Board zoom percentage" />
+            <span id="zoom-value" class="zoom-value">100%</span>
+          </label>
+          <label class="pill" for="ai-logic">Agent
+            <select id="ai-logic">
+              <option value="random" selected>Random but Legal</option>
+              <option value="minimax">Minimax (Stronger)</option>
+              <option value="humanlike">Human-like Minimax</option>
+            </select>
+          </label>
+          <button id="new-game" type="button">New Game</button>
+        </div>
+
+        <div class="status-row">
+          <section class="card">
+            <h2>Score</h2>
+            <div class="score-grid">
+              <div class="score-line human">You <span id="human-score">0</span></div>
+              <div class="score-line ai">Agent <span id="ai-score">0</span></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Turn</h2>
+            <p class="status" id="status"></p>
+            <p class="hint compact" id="ai-hint">Click an available edge to draw a line. The agent currently chooses random legal moves.</p>
+          </section>
+        </div>
       </div>
     </header>
 
@@ -343,22 +413,6 @@
       <div class="board-wrap">
         <div id="board" class="board" aria-label="Dots and Boxes board"></div>
       </div>
-
-      <aside class="side">
-        <section class="card">
-          <h2>Score</h2>
-          <div class="score-grid">
-            <div class="score-line human">You <span id="human-score">0</span></div>
-            <div class="score-line ai">Agent <span id="ai-score">0</span></div>
-          </div>
-        </section>
-
-        <section class="card">
-          <h2>Turn</h2>
-          <p class="status" id="status"></p>
-          <p class="hint" id="ai-hint">Click an available edge to draw a line. The agent currently chooses random legal moves.</p>
-        </section>
-      </aside>
     </main>
   </section>
 
@@ -371,6 +425,9 @@
     const humanScoreEl = document.getElementById("human-score");
     const aiScoreEl = document.getElementById("ai-score");
     const sizeEl = document.getElementById("size");
+    const edgeSizeEl = document.getElementById("edge-size");
+    const zoomEl = document.getElementById("zoom");
+    const zoomValueEl = document.getElementById("zoom-value");
     const aiLogicEl = document.getElementById("ai-logic");
     const newGameEl = document.getElementById("new-game");
     const aiHintEl = document.getElementById("ai-hint");
@@ -381,6 +438,8 @@
     let boxes = [];
     let currentPlayer = HUMAN;
     let gameOver = false;
+    let edgePx = 36;
+    let zoomPercent = 100;
 
     function make2D(rows, cols, value = null) {
       return Array.from({ length: rows }, () => Array(cols).fill(value));
@@ -395,8 +454,39 @@
       gameOver = false;
     }
 
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function getDisplayCellPx() {
+      return clamp(Math.round((edgePx * zoomPercent) / 100), 6, 120);
+    }
+
     function gridColumns() {
-      return `repeat(${dots * 2 - 1}, 36px)`;
+      return `repeat(${dots * 2 - 1}, ${getDisplayCellPx()}px)`;
+    }
+
+    function applyBoardSizing() {
+      const parsedEdge = Number(edgeSizeEl.value);
+      const parsedZoom = Number(zoomEl.value);
+      edgePx = Number.isFinite(parsedEdge) ? clamp(Math.floor(parsedEdge), 8, 60) : 36;
+      zoomPercent = Number.isFinite(parsedZoom) ? clamp(Math.floor(parsedZoom), 50, 200) : 100;
+
+      edgeSizeEl.value = String(edgePx);
+      zoomEl.value = String(zoomPercent);
+      zoomValueEl.textContent = `${zoomPercent}%`;
+
+      const cell = getDisplayCellPx();
+      const dot = clamp(Math.round(cell * 0.33), 4, 18);
+      const thickness = clamp(Math.round(cell * 0.16), 2, 12);
+      const pad = clamp(Math.round(cell * 0.1), 1, 8);
+
+      boardEl.style.gridTemplateColumns = gridColumns();
+      boardEl.style.setProperty("--cell-size", `${cell}px`);
+      boardEl.style.setProperty("--dot-size", `${dot}px`);
+      boardEl.style.setProperty("--line-thickness", `${thickness}px`);
+      boardEl.style.setProperty("--line-pad", `${pad}px`);
+      boardEl.style.setProperty("--box-size", `${cell}px`);
     }
 
     function isEdgeClaimed(type, row, col) {
@@ -554,7 +644,7 @@
       return count;
     }
 
-    function evaluateState(state, currentPlayer) {
+    function evaluateStateClassic(state, currentPlayer) {
       let score = scoreDiffInState(state) * 100;
 
       for (let r = 0; r < state.dots - 1; r += 1) {
@@ -574,14 +664,102 @@
       return score;
     }
 
-    function minimax(state, depth, alpha, beta, currentPlayer) {
+    function summarizeOpenBoxes(state) {
+      const summary = { zero: 0, one: 0, two: 0, three: 0 };
+      for (let r = 0; r < state.dots - 1; r += 1) {
+        for (let c = 0; c < state.dots - 1; c += 1) {
+          if (state.boxes[r][c] !== null) continue;
+          const edges = countEdgesAroundBoxInState(state, r, c);
+          if (edges === 0) summary.zero += 1;
+          else if (edges === 1) summary.one += 1;
+          else if (edges === 2) summary.two += 1;
+          else if (edges === 3) summary.three += 1;
+        }
+      }
+      return summary;
+    }
+
+    function estimateTwoEdgeChains(state) {
+      const rows = state.dots - 1;
+      const cols = state.dots - 1;
+      const seen = make2D(rows, cols, false);
+      let longChains = 0;
+      let longChainCells = 0;
+
+      function neighbors(r, c) {
+        return [
+          [r - 1, c],
+          [r + 1, c],
+          [r, c - 1],
+          [r, c + 1],
+        ];
+      }
+
+      for (let r = 0; r < rows; r += 1) {
+        for (let c = 0; c < cols; c += 1) {
+          if (seen[r][c]) continue;
+          if (state.boxes[r][c] !== null) continue;
+          if (countEdgesAroundBoxInState(state, r, c) !== 2) continue;
+
+          let componentSize = 0;
+          const stack = [[r, c]];
+          seen[r][c] = true;
+
+          while (stack.length > 0) {
+            const [cr, cc] = stack.pop();
+            componentSize += 1;
+            for (const [nr, nc] of neighbors(cr, cc)) {
+              if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
+              if (seen[nr][nc]) continue;
+              if (state.boxes[nr][nc] !== null) continue;
+              if (countEdgesAroundBoxInState(state, nr, nc) !== 2) continue;
+              seen[nr][nc] = true;
+              stack.push([nr, nc]);
+            }
+          }
+
+          if (componentSize >= 3) {
+            longChains += 1;
+            longChainCells += componentSize;
+          }
+        }
+      }
+
+      return { longChains, longChainCells };
+    }
+
+    function evaluateStateHumanLike(state, currentPlayer) {
+      const remainingMoves = legalMovesFromState(state).length;
+      const open = summarizeOpenBoxes(state);
+      const chains = estimateTwoEdgeChains(state);
+      const lateGame = remainingMoves <= 14;
+
+      let score = scoreDiffInState(state) * 120;
+
+      if (lateGame) {
+        score += open.three * (currentPlayer === AI ? 20 : -20);
+        score += open.two * -0.8;
+        score += chains.longChainCells * 0.6;
+      } else {
+        score += open.three * (currentPlayer === AI ? 8 : -14);
+        score += open.two * -3.6;
+        score += open.one * 1.4;
+        score += open.zero * 0.7;
+        score += chains.longChains * -3.2;
+        score += chains.longChainCells * -1.4;
+      }
+
+      return score;
+    }
+
+    function minimax(state, depth, alpha, beta, currentPlayer, evaluateFn) {
       if (depth === 0 || allBoxesClaimedInState(state)) {
-        return { value: evaluateState(state, currentPlayer), move: null };
+        return { value: evaluateFn(state, currentPlayer), move: null };
       }
 
       const moves = legalMovesFromState(state);
       if (moves.length === 0) {
-        return { value: evaluateState(state, currentPlayer), move: null };
+        return { value: evaluateFn(state, currentPlayer), move: null };
       }
 
       const maximizing = currentPlayer === AI;
@@ -596,7 +774,7 @@
           boxes: state.boxes.map((row) => row.slice()),
         };
         const result = applyMoveToState(nextState, move, currentPlayer);
-        const child = minimax(nextState, depth - 1, alpha, beta, result.nextPlayer);
+        const child = minimax(nextState, depth - 1, alpha, beta, result.nextPlayer, evaluateFn);
 
         if (maximizing) {
           if (child.value > bestValue) {
@@ -618,21 +796,74 @@
       return { value: bestValue, move: bestMove };
     }
 
-    function pickMinimaxMove() {
-      const state = cloneStateFromCurrent();
-      const remaining = legalMovesFromState(state).length;
+    function getMinimaxDepth(remaining, mode) {
+      if (mode === "humanlike") {
+        let depth = 3;
+        if (remaining <= 12) depth = 7;
+        else if (remaining <= 20) depth = 6;
+        else if (remaining <= 32) depth = 4;
+        return depth;
+      }
+
       let depth = 3;
       if (remaining <= 14) depth = 8;
       else if (remaining <= 22) depth = 6;
       else if (remaining <= 34) depth = 4;
+      return depth;
+    }
 
-      const result = minimax(state, depth, -Infinity, Infinity, AI);
+    function pickMinimaxMove() {
+      const state = cloneStateFromCurrent();
+      if (state.dots - 1 >= 10) {
+        const moves = legalMovesFromState(state);
+        return moves[Math.floor(Math.random() * moves.length)] || null;
+      }
+      const remaining = legalMovesFromState(state).length;
+      const depth = getMinimaxDepth(remaining, "classic");
+
+      const result = minimax(state, depth, -Infinity, Infinity, AI, evaluateStateClassic);
       return result.move;
+    }
+
+    function pickHumanLikeMinimaxMove() {
+      const rootState = cloneStateFromCurrent();
+      const moves = legalMovesFromState(rootState);
+      if (moves.length === 0) return null;
+      if (rootState.dots - 1 >= 10) {
+        return moves[Math.floor(Math.random() * moves.length)];
+      }
+
+      const remaining = moves.length;
+      const depth = getMinimaxDepth(remaining, "humanlike");
+
+      let best = -Infinity;
+      const ranked = [];
+
+      for (const move of moves) {
+        const nextState = {
+          dots: rootState.dots,
+          hEdges: rootState.hEdges.map((row) => row.slice()),
+          vEdges: rootState.vEdges.map((row) => row.slice()),
+          boxes: rootState.boxes.map((row) => row.slice()),
+        };
+        const result = applyMoveToState(nextState, move, AI);
+        const child = minimax(nextState, depth - 1, -Infinity, Infinity, result.nextPlayer, evaluateStateHumanLike);
+        ranked.push({ move, value: child.value });
+        if (child.value > best) best = child.value;
+      }
+
+      const epsilon = 2.5;
+      const topBand = ranked.filter((entry) => entry.value >= best - epsilon);
+      const pool = topBand.length > 0 ? topBand : ranked;
+      const selected = pool[Math.floor(Math.random() * pool.length)];
+      return selected.move;
     }
 
     function updateHintForAiLogic() {
       if (aiLogicEl.value === "minimax") {
-        aiHintEl.textContent = "Click an available edge to draw a line. The agent is using minimax with look-ahead.";
+        aiHintEl.textContent = "Click an available edge to draw a line. The agent is using minimax with look-ahead (auto-simplifies on very large boards).";
+      } else if (aiLogicEl.value === "humanlike") {
+        aiHintEl.textContent = "Click an available edge to draw a line. The agent uses a human-like minimax style with safer midgame choices (auto-simplifies on very large boards).";
       } else {
         aiHintEl.textContent = "Click an available edge to draw a line. The agent currently chooses random legal moves.";
       }
@@ -686,7 +917,7 @@
 
     function buildBoardUI() {
       boardEl.innerHTML = "";
-      boardEl.style.gridTemplateColumns = gridColumns();
+      applyBoardSizing();
 
       for (let r = 0; r < dots * 2 - 1; r += 1) {
         for (let c = 0; c < dots * 2 - 1; c += 1) {
@@ -764,6 +995,8 @@
       let pick;
       if (aiLogicEl.value === "minimax") {
         pick = pickMinimaxMove();
+      } else if (aiLogicEl.value === "humanlike") {
+        pick = pickHumanLikeMinimaxMove();
       }
       if (!pick) {
         pick = moves[Math.floor(Math.random() * moves.length)];
@@ -772,7 +1005,9 @@
     }
 
     function newGame() {
-      const size = Number(sizeEl.value);
+      const parsed = Number(sizeEl.value);
+      const size = Number.isFinite(parsed) ? Math.max(2, Math.min(30, Math.floor(parsed))) : 5;
+      sizeEl.value = String(size);
       setupState(size);
       buildBoardUI();
       refreshBoardUI();
@@ -781,7 +1016,12 @@
 
     newGameEl.addEventListener("click", newGame);
     sizeEl.addEventListener("change", newGame);
+    edgeSizeEl.addEventListener("change", applyBoardSizing);
+    edgeSizeEl.addEventListener("input", applyBoardSizing);
+    zoomEl.addEventListener("input", applyBoardSizing);
+    zoomEl.addEventListener("change", applyBoardSizing);
     aiLogicEl.addEventListener("change", updateHintForAiLogic);
+    applyBoardSizing();
     updateHintForAiLogic();
     newGame();
   </script>
