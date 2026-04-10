@@ -443,6 +443,14 @@
               <option value="humanlike">Human-like Minimax</option>
             </select>
           </label>
+          <label class="pill" for="auto-logic">Auto Play Logic
+            <select id="auto-logic">
+              <option value="random" selected>Random but Legal</option>
+              <option value="minimax">Minimax (Stronger)</option>
+              <option value="humanlike">Human-like Minimax</option>
+            </select>
+          </label>
+          <button id="auto-play-toggle" type="button">Auto Play: Off</button>
           <label class="pill" for="art-file">Colors
             <input id="art-file" type="file" accept=".txt,.pixel.txt" aria-label="Choose hidden color file" />
             <span id="art-file-name" class="art-file-name">No file</span>
@@ -497,6 +505,8 @@
     const zoomEl = document.getElementById("zoom");
     const zoomValueEl = document.getElementById("zoom-value");
     const aiLogicEl = document.getElementById("ai-logic");
+    const autoLogicEl = document.getElementById("auto-logic");
+    const autoPlayToggleEl = document.getElementById("auto-play-toggle");
     const artFileEl = document.getElementById("art-file");
     const artFileNameEl = document.getElementById("art-file-name");
     const artPreviewEl = document.getElementById("art-preview");
@@ -517,6 +527,8 @@
     let gameOver = false;
     let edgePx = 36;
     let zoomPercent = 100;
+    let autoPlayEnabled = false;
+    let turnTimerId = null;
 
     function make2D(rows, cols, value = null) {
       return Array.from({ length: rows }, () => Array(cols).fill(value));
@@ -699,6 +711,17 @@
 
     function getDisplayCellPx() {
       return clamp(Math.round((edgePx * zoomPercent) / 100), 6, 120);
+    }
+
+    function setAutoPlayEnabled(enabled) {
+      autoPlayEnabled = enabled;
+      autoPlayToggleEl.textContent = autoPlayEnabled ? "Auto Play: On (Pause)" : "Auto Play: Off";
+      if (!autoPlayEnabled && turnTimerId !== null) {
+        window.clearTimeout(turnTimerId);
+        turnTimerId = null;
+      }
+      setStatus();
+      maybeScheduleTurn();
     }
 
     function gridColumns() {
@@ -1057,8 +1080,7 @@
       return depth;
     }
 
-    function pickMinimaxMove() {
-      const state = cloneStateFromCurrent();
+    function pickMinimaxMove(state) {
       if (Math.max(state.boxRows, state.boxCols) >= 10) {
         const moves = legalMovesFromState(state);
         return moves[Math.floor(Math.random() * moves.length)] || null;
@@ -1070,8 +1092,7 @@
       return result.move;
     }
 
-    function pickHumanLikeMinimaxMove() {
-      const rootState = cloneStateFromCurrent();
+    function pickHumanLikeMinimaxMove(rootState) {
       const moves = legalMovesFromState(rootState);
       if (moves.length === 0) return null;
       if (Math.max(rootState.boxRows, rootState.boxCols) >= 10) {
@@ -1107,6 +1128,40 @@
       return selected.move;
     }
 
+    function swapOwner(owner) {
+      if (owner === HUMAN) return AI;
+      if (owner === AI) return HUMAN;
+      return owner;
+    }
+
+    function swapStatePerspective(state) {
+      return {
+        boxRows: state.boxRows,
+        boxCols: state.boxCols,
+        dotsRows: state.dotsRows,
+        dotsCols: state.dotsCols,
+        hEdges: state.hEdges.map((row) => row.map(swapOwner)),
+        vEdges: state.vEdges.map((row) => row.map(swapOwner)),
+        boxes: state.boxes.map((row) => row.map(swapOwner)),
+      };
+    }
+
+    function pickMoveForPlayer(player, logic, moves) {
+      if (logic === "random") {
+        return moves[Math.floor(Math.random() * moves.length)] || null;
+      }
+
+      const baseState = cloneStateFromCurrent();
+      const state = player === AI ? baseState : swapStatePerspective(baseState);
+      if (logic === "minimax") {
+        return pickMinimaxMove(state);
+      }
+      if (logic === "humanlike") {
+        return pickHumanLikeMinimaxMove(state);
+      }
+      return moves[Math.floor(Math.random() * moves.length)] || null;
+    }
+
     function updateHintForAiLogic() {
       if (aiLogicEl.value === "minimax") {
         aiHintEl.textContent = "Click an available edge to draw a line. The agent is using minimax with look-ahead (auto-simplifies on very large boards).";
@@ -1134,7 +1189,12 @@
 
     function setStatus(extra = "") {
       if (gameOver) return;
-      const base = currentPlayer === HUMAN ? "Your turn." : "Agent is choosing a move...";
+      let base;
+      if (currentPlayer === HUMAN) {
+        base = autoPlayEnabled ? "Auto player is choosing a move..." : "Your turn.";
+      } else {
+        base = "Agent is choosing a move...";
+      }
       statusEl.textContent = `${base}${extra ? ` ${extra}` : ""}`;
     }
 
@@ -1221,14 +1281,11 @@
       }
       const bonusText = boxesWon > 0 ? `${player === HUMAN ? "You" : "Agent"} completed ${boxesWon} box${boxesWon > 1 ? "es" : ""}.` : "";
       setStatus(bonusText);
-
-      if (!gameOver && currentPlayer === AI) {
-        window.setTimeout(playAiTurn, 420);
-      }
+      maybeScheduleTurn();
     }
 
     function onHumanMove(event) {
-      if (gameOver || currentPlayer !== HUMAN) return;
+      if (gameOver || currentPlayer !== HUMAN || autoPlayEnabled) return;
       const edge = event.currentTarget;
       const type = edge.dataset.type;
       const row = Number(edge.dataset.row);
@@ -1237,24 +1294,42 @@
       applyMove(type, row, col, HUMAN);
     }
 
-    function playAiTurn() {
-      if (gameOver || currentPlayer !== AI) return;
+    function playAgentTurn(player, logic) {
+      if (gameOver || currentPlayer !== player) return;
       const moves = legalMoves();
       if (moves.length === 0) {
         finishIfNeeded();
         return;
       }
 
-      let pick;
-      if (aiLogicEl.value === "minimax") {
-        pick = pickMinimaxMove();
-      } else if (aiLogicEl.value === "humanlike") {
-        pick = pickHumanLikeMinimaxMove();
-      }
+      const pick = pickMoveForPlayer(player, logic, moves);
       if (!pick) {
-        pick = moves[Math.floor(Math.random() * moves.length)];
+        return;
       }
-      applyMove(pick.type, pick.row, pick.col, AI);
+      applyMove(pick.type, pick.row, pick.col, player);
+    }
+
+    function maybeScheduleTurn() {
+      if (turnTimerId !== null) {
+        window.clearTimeout(turnTimerId);
+        turnTimerId = null;
+      }
+      if (gameOver) return;
+
+      if (currentPlayer === AI) {
+        turnTimerId = window.setTimeout(() => {
+          turnTimerId = null;
+          playAgentTurn(AI, aiLogicEl.value);
+        }, 420);
+        return;
+      }
+
+      if (currentPlayer === HUMAN && autoPlayEnabled) {
+        turnTimerId = window.setTimeout(() => {
+          turnTimerId = null;
+          playAgentTurn(HUMAN, autoLogicEl.value);
+        }, 420);
+      }
     }
 
     function newGame() {
@@ -1268,6 +1343,7 @@
       buildBoardUI();
       refreshBoardUI();
       setStatus();
+      maybeScheduleTurn();
     }
 
     newGameEl.addEventListener("click", newGame);
@@ -1278,6 +1354,10 @@
     zoomEl.addEventListener("input", applyBoardSizing);
     zoomEl.addEventListener("change", applyBoardSizing);
     aiLogicEl.addEventListener("change", updateHintForAiLogic);
+    autoPlayToggleEl.addEventListener("click", () => setAutoPlayEnabled(!autoPlayEnabled));
+    autoLogicEl.addEventListener("change", () => {
+      if (autoPlayEnabled && currentPlayer === HUMAN) maybeScheduleTurn();
+    });
     artFileEl.addEventListener("change", onArtFileSelected);
     applyBoardSizing();
     clearPreview();
