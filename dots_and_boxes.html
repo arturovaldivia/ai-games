@@ -986,6 +986,7 @@
     let vEdges = [];
     let boxes = [];
     let hiddenBoxColors = [];
+    let hiddenBoxGrayColors = [];
       let hiddenBoxTokens = [];
     let loadedArt = null;
       let objectiveTargets = {};
@@ -1162,9 +1163,31 @@
       vEdges = make2D(dotsRows - 1, dotsCols);
       boxes = make2D(boxRows, boxCols);
       hiddenBoxColors = createHiddenColorsForSize(boxRows, boxCols);
+      hiddenBoxGrayColors = createGrayMaskFromColors(hiddenBoxColors);
       hiddenBoxTokens = createHiddenTokensForSize(boxRows, boxCols);
       currentPlayer = HUMAN;
       gameOver = false;
+    }
+
+    function clamp01(value) {
+      return Math.max(0, Math.min(1, value));
+    }
+
+    function toGrayColor(color, alphaFactor = 0.42) {
+      const m = color && color.match(/rgba?\(([^)]+)\)/i);
+      if (!m) return "rgba(165, 173, 179, 0.28)";
+      const parts = m[1].split(",").map((v) => Number(v.trim()));
+      const r = Number.isFinite(parts[0]) ? parts[0] : 180;
+      const g = Number.isFinite(parts[1]) ? parts[1] : 180;
+      const b = Number.isFinite(parts[2]) ? parts[2] : 180;
+      const sourceAlpha = Number.isFinite(parts[3]) ? parts[3] : 1;
+      const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+      const a = clamp01(sourceAlpha * alphaFactor);
+      return `rgba(${gray}, ${gray}, ${gray}, ${a.toFixed(3)})`;
+    }
+
+    function createGrayMaskFromColors(colors) {
+      return colors.map((row) => row.map((color) => toGrayColor(color)));
     }
 
     function rgbaString(r, g, b, a) {
@@ -2082,7 +2105,7 @@
           boxEl.classList.add(owner, "revealed");
           boxEl.style.background = hiddenBoxColors[row]?.[col] || "rgba(220, 220, 220, 0.9)";
         } else {
-          boxEl.style.background = "";
+          boxEl.style.background = hiddenBoxGrayColors[row]?.[col] || "rgba(176, 182, 188, 0.26)";
         }
       }
 
