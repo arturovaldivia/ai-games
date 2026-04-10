@@ -341,6 +341,47 @@
       color: var(--ai);
     }
 
+    .score-objective-progress {
+      margin-top: 8px;
+      display: none;
+      gap: 6px;
+    }
+
+    .score-objective-row {
+      border: 1px solid rgba(37, 50, 56, 0.14);
+      border-radius: 8px;
+      padding: 5px 7px;
+      background: rgba(255, 255, 255, 0.82);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px;
+      font-size: 0.82rem;
+      align-items: center;
+    }
+
+    .score-objective-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--ink);
+    }
+
+    .score-objective-sub {
+      margin-top: 2px;
+      font-size: 0.77rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .score-objective-empty {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
     .status {
       margin: 0;
       font-size: 0.95rem;
@@ -409,6 +450,103 @@
       min-height: 2.4em;
     }
 
+    .end-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      place-items: center;
+      background: rgba(17, 25, 30, 0.52);
+      backdrop-filter: blur(2px);
+      padding: 18px;
+    }
+
+    .end-modal.open {
+      display: grid;
+    }
+
+    #confetti-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .end-panel {
+      width: min(760px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(37, 50, 56, 0.16);
+      background: #fffdf9;
+      box-shadow: 0 18px 44px rgba(17, 25, 30, 0.36);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 14px;
+      align-items: start;
+      animation: fade-slide 230ms ease both;
+    }
+
+    .end-panel.win {
+      background: linear-gradient(145deg, #fffdf8, #ebfbf0);
+      border-color: rgba(20, 99, 93, 0.35);
+    }
+
+    .end-panel.lose {
+      background: linear-gradient(145deg, #fffdf8, #f3efef);
+      border-color: rgba(177, 58, 45, 0.35);
+    }
+
+    .end-panel.draw {
+      background: linear-gradient(145deg, #fffdf8, #f1f6f8);
+    }
+
+    .end-image-wrap {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(37, 50, 56, 0.2);
+      background:
+        linear-gradient(45deg, rgba(37, 50, 56, 0.035) 25%, transparent 25%, transparent 75%, rgba(37, 50, 56, 0.035) 75%),
+        linear-gradient(45deg, rgba(37, 50, 56, 0.035) 25%, transparent 25%, transparent 75%, rgba(37, 50, 56, 0.035) 75%);
+      background-size: 12px 12px;
+      background-position: 0 0, 6px 6px;
+      padding: 8px;
+    }
+
+    #end-image {
+      width: 100%;
+      max-width: 180px;
+      aspect-ratio: 1;
+      height: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .end-copy h3 {
+      margin: 2px 0 8px;
+      font-size: 1.2rem;
+    }
+
+    .end-copy p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .end-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-soft {
+      background: #eef2f3;
+      color: var(--ink);
+      border: 1px solid rgba(37, 50, 56, 0.16);
+    }
+
     @keyframes fade-slide {
       from {
         opacity: 0;
@@ -450,6 +588,14 @@
 
       .board-wrap {
         padding: 12px;
+      }
+
+      .end-panel {
+        grid-template-columns: 1fr;
+      }
+
+      #end-image {
+        max-width: 140px;
       }
     }
   </style>
@@ -517,6 +663,7 @@
               <div class="score-line human">You <span id="human-score">0</span></div>
               <div class="score-line ai">Agent <span id="ai-score">0</span></div>
             </div>
+            <div id="score-objective-progress" class="score-objective-progress"></div>
           </section>
 
           <section class="card">
@@ -543,6 +690,23 @@
     </main>
   </section>
 
+  <div id="end-modal" class="end-modal" role="dialog" aria-modal="true" aria-label="Game result">
+    <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+    <section id="end-panel" class="end-panel draw">
+      <div class="end-image-wrap">
+        <canvas id="end-image" width="220" height="220" aria-label="Completed board image"></canvas>
+      </div>
+      <div class="end-copy">
+        <h3 id="end-title">Game Over</h3>
+        <p id="end-message">Final result.</p>
+        <div class="end-actions">
+          <button id="end-new-game" type="button">Play Again</button>
+          <button id="end-close" type="button" class="btn-soft">Close</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <script>
     const HUMAN = "human";
     const AI = "ai";
@@ -551,6 +715,7 @@
     const statusEl = document.getElementById("status");
     const humanScoreEl = document.getElementById("human-score");
     const aiScoreEl = document.getElementById("ai-score");
+    const scoreObjectiveProgressEl = document.getElementById("score-objective-progress");
     const rowsEl = document.getElementById("rows");
     const colsEl = document.getElementById("cols");
       const gameModeEl = document.getElementById("game-mode");
@@ -566,6 +731,14 @@
     const previewMetaEl = document.getElementById("preview-meta");
     const newGameEl = document.getElementById("new-game");
     const aiHintEl = document.getElementById("ai-hint");
+    const endModalEl = document.getElementById("end-modal");
+    const endPanelEl = document.getElementById("end-panel");
+    const endTitleEl = document.getElementById("end-title");
+    const endMessageEl = document.getElementById("end-message");
+    const endImageEl = document.getElementById("end-image");
+    const confettiCanvasEl = document.getElementById("confetti-canvas");
+    const endNewGameEl = document.getElementById("end-new-game");
+    const endCloseEl = document.getElementById("end-close");
       const objectiveCardEl = document.getElementById("objective-card");
       const objectiveHintEl = document.getElementById("objective-hint");
       const objectiveGridEl = document.getElementById("objective-grid");
@@ -587,6 +760,145 @@
     let zoomPercent = 100;
     let autoPlayEnabled = false;
     let turnTimerId = null;
+    let confettiRaf = null;
+
+    function hideEndModal() {
+      endModalEl.classList.remove("open");
+      stopConfetti();
+    }
+
+    function stopConfetti() {
+      if (confettiRaf !== null) {
+        cancelAnimationFrame(confettiRaf);
+        confettiRaf = null;
+      }
+      const ctx = confettiCanvasEl.getContext("2d");
+      if (!ctx) return;
+      confettiCanvasEl.width = confettiCanvasEl.clientWidth;
+      confettiCanvasEl.height = confettiCanvasEl.clientHeight;
+      ctx.clearRect(0, 0, confettiCanvasEl.width, confettiCanvasEl.height);
+    }
+
+    function launchConfetti() {
+      stopConfetti();
+      const ctx = confettiCanvasEl.getContext("2d");
+      if (!ctx) return;
+
+      const rect = endModalEl.getBoundingClientRect();
+      confettiCanvasEl.width = Math.max(1, Math.floor(rect.width));
+      confettiCanvasEl.height = Math.max(1, Math.floor(rect.height));
+
+      const colors = ["#ffd166", "#06d6a0", "#118ab2", "#ef476f", "#ff9f1c", "#8ac926"];
+      const pieces = Array.from({ length: 170 }, () => ({
+        x: Math.random() * confettiCanvasEl.width,
+        y: -20 - Math.random() * confettiCanvasEl.height * 0.35,
+        w: 4 + Math.random() * 6,
+        h: 7 + Math.random() * 8,
+        vx: -1.8 + Math.random() * 3.6,
+        vy: 1.6 + Math.random() * 2.4,
+        g: 0.03 + Math.random() * 0.05,
+        rot: Math.random() * Math.PI,
+        vr: -0.2 + Math.random() * 0.4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      }));
+
+      let frame = 0;
+      const maxFrames = 220;
+
+      function tick() {
+        frame += 1;
+        ctx.clearRect(0, 0, confettiCanvasEl.width, confettiCanvasEl.height);
+
+        for (const p of pieces) {
+          p.vy += p.g;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rot += p.vr;
+
+          if (p.y > confettiCanvasEl.height + 20) {
+            p.y = -20;
+            p.x = Math.random() * confettiCanvasEl.width;
+            p.vy = 1.4 + Math.random() * 2.2;
+          }
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        }
+
+        if (frame < maxFrames && endModalEl.classList.contains("open")) {
+          confettiRaf = requestAnimationFrame(tick);
+        } else {
+          stopConfetti();
+        }
+      }
+
+      confettiRaf = requestAnimationFrame(tick);
+    }
+
+    function renderArtToCanvas(canvas, art) {
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const w = art.width;
+      const h = art.height;
+      const px = Math.max(1, Math.floor(Math.min(canvas.width / w, canvas.height / h)));
+      const drawW = px * w;
+      const drawH = px * h;
+      const offsetX = Math.floor((canvas.width - drawW) / 2);
+      const offsetY = Math.floor((canvas.height - drawH) / 2);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let r = 0; r < h; r += 1) {
+        for (let c = 0; c < w; c += 1) {
+          ctx.fillStyle = art.colors[r][c];
+          ctx.fillRect(offsetX + c * px, offsetY + r * px, px, px);
+        }
+      }
+
+      ctx.strokeStyle = "rgba(37, 50, 56, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(offsetX + 0.5, offsetY + 0.5, drawW - 1, drawH - 1);
+    }
+
+    function buildCurrentBoardArt() {
+      return {
+        width: boxCols,
+        height: boxRows,
+        colors: hiddenBoxColors.map((row) => row.slice()),
+      };
+    }
+
+    function showEndModal(outcome, message) {
+      endPanelEl.classList.remove("win", "lose", "draw");
+
+      if (outcome === "human") {
+        endPanelEl.classList.add("win");
+        endTitleEl.textContent = "You Won!";
+        endMessageEl.textContent = message || "Great reads and timing. You completed the winning plan.";
+        launchConfetti();
+      } else if (outcome === "ai") {
+        endPanelEl.classList.add("lose");
+        endTitleEl.textContent = "Agent Won";
+        endMessageEl.textContent = message || "Tough round. The agent got there first this time.";
+        stopConfetti();
+      } else {
+        endPanelEl.classList.add("draw");
+        endTitleEl.textContent = "Draw";
+        endMessageEl.textContent = message || "No one pulled ahead this time.";
+        stopConfetti();
+      }
+
+      const art = loadedArt || buildCurrentBoardArt();
+      renderArtToCanvas(endImageEl, art);
+      endModalEl.classList.add("open");
+    }
 
     function make2D(rows, cols, value = null) {
       return Array.from({ length: rows }, () => Array(cols).fill(value));
@@ -688,6 +1000,7 @@
           input.value = String(value);
           objectiveTargets[token] = value;
         }
+        refreshBoardUI();
       }
 
       function requiredObjectivesExist() {
@@ -732,31 +1045,7 @@
     }
 
     function renderPreview(art) {
-      const ctx = artPreviewEl.getContext("2d");
-      if (!ctx) return;
-
-      const w = art.width;
-      const h = art.height;
-      const pixel = Math.max(1, Math.floor(Math.min(artPreviewEl.width / w, artPreviewEl.height / h)));
-      const drawW = pixel * w;
-      const drawH = pixel * h;
-      const offsetX = Math.floor((artPreviewEl.width - drawW) / 2);
-      const offsetY = Math.floor((artPreviewEl.height - drawH) / 2);
-
-      ctx.clearRect(0, 0, artPreviewEl.width, artPreviewEl.height);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-      ctx.fillRect(0, 0, artPreviewEl.width, artPreviewEl.height);
-
-      for (let r = 0; r < h; r += 1) {
-        for (let c = 0; c < w; c += 1) {
-          ctx.fillStyle = art.colors[r][c];
-          ctx.fillRect(offsetX + c * pixel, offsetY + r * pixel, pixel, pixel);
-        }
-      }
-
-      ctx.strokeStyle = "rgba(37, 50, 56, 0.4)";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(offsetX + 0.5, offsetY + 0.5, drawW - 1, drawH - 1);
+      renderArtToCanvas(artPreviewEl, art);
       previewMetaEl.textContent = `${art.width} x ${art.height}`;
     }
 
@@ -1333,10 +1622,13 @@
       const ai = scoreOf(AI);
       if (human > ai) {
         statusEl.textContent = `Game over. You win ${human} to ${ai}.`;
+        showEndModal("human", `You win ${human} to ${ai}. Celebration earned.`);
       } else if (ai > human) {
         statusEl.textContent = `Game over. Agent wins ${ai} to ${human}.`;
+        showEndModal("ai", `Agent wins ${ai} to ${human}. A quieter ending this round.`);
       } else {
         statusEl.textContent = `Game over. Draw ${human}-${ai}.`;
+        showEndModal("draw", `Draw ${human}-${ai}. Evenly matched.`);
       }
       return true;
     }
@@ -1350,6 +1642,56 @@
         base = "Agent is choosing a move...";
       }
       statusEl.textContent = `${base}${extra ? ` ${extra}` : ""}`;
+    }
+
+    function refreshObjectiveScoreUI() {
+      const inObjectiveMode = gameModeEl.value === "objective";
+      if (!inObjectiveMode) {
+        scoreObjectiveProgressEl.style.display = "none";
+        scoreObjectiveProgressEl.innerHTML = "";
+        return;
+      }
+
+      scoreObjectiveProgressEl.style.display = "grid";
+      scoreObjectiveProgressEl.innerHTML = "";
+
+      const requiredTokens = Object.entries(objectiveTargets).filter(([, target]) => target > 0);
+      if (requiredTokens.length === 0) {
+        const note = document.createElement("p");
+        note.className = "score-objective-empty";
+        note.textContent = "Set one or more objective targets above 0.";
+        scoreObjectiveProgressEl.appendChild(note);
+        return;
+      }
+
+      const humanCounts = countCapturedTokensByPlayer(HUMAN);
+      const aiCounts = countCapturedTokensByPlayer(AI);
+
+      for (const [token, target] of requiredTokens) {
+        const row = document.createElement("div");
+        row.className = "score-objective-row";
+
+        const chip = document.createElement("span");
+        chip.className = "objective-chip";
+        chip.style.background = loadedArt?.palette?.[token] || "rgba(210,210,210,0.95)";
+
+        const content = document.createElement("div");
+
+        const main = document.createElement("div");
+        main.className = "score-objective-main";
+        main.innerHTML = `<strong>${token}</strong><span>Target ${target}</span>`;
+
+        const sub = document.createElement("div");
+        sub.className = "score-objective-sub";
+        sub.innerHTML = `<span>You ${humanCounts[token] || 0}/${target}</span><span>Agent ${aiCounts[token] || 0}/${target}</span>`;
+
+        content.appendChild(main);
+        content.appendChild(sub);
+
+        row.appendChild(chip);
+        row.appendChild(content);
+        scoreObjectiveProgressEl.appendChild(row);
+      }
     }
 
     function refreshBoardUI() {
@@ -1380,6 +1722,7 @@
 
       humanScoreEl.textContent = String(scoreOf(HUMAN));
       aiScoreEl.textContent = String(scoreOf(AI));
+      refreshObjectiveScoreUI();
     }
 
     function buildBoardUI() {
@@ -1432,6 +1775,7 @@
       if (hasMetObjectives(player)) {
         gameOver = true;
         statusEl.textContent = `${player === HUMAN ? "You" : "Agent"} win by objective completion.`;
+        showEndModal(player === HUMAN ? "human" : "ai", `${player === HUMAN ? "You" : "Agent"} completed all required objectives.`);
         return;
       }
 
@@ -1511,6 +1855,7 @@
       rowsEl.value = String(rows);
       colsEl.value = String(cols);
       setupState(rows, cols);
+      hideEndModal();
       buildBoardUI();
       refreshBoardUI();
       setStatus();
@@ -1535,6 +1880,14 @@
       if (autoPlayEnabled && currentPlayer === HUMAN) maybeScheduleTurn();
     });
     artFileEl.addEventListener("change", onArtFileSelected);
+    endCloseEl.addEventListener("click", hideEndModal);
+    endNewGameEl.addEventListener("click", () => {
+      hideEndModal();
+      newGame();
+    });
+    endModalEl.addEventListener("click", (event) => {
+      if (event.target === endModalEl) hideEndModal();
+    });
     applyBoardSizing();
     clearPreview();
     buildObjectiveInputsFromLoadedArt();
