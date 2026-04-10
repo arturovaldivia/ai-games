@@ -87,8 +87,48 @@
     .status-row {
       width: 100%;
       display: grid;
-      grid-template-columns: 280px 1fr 180px;
+      grid-template-columns: minmax(230px, 1fr) 220px minmax(340px, 1.5fr) 180px;
       gap: 10px;
+    }
+
+    #objective-card {
+      display: grid;
+      align-content: start;
+      gap: 6px;
+    }
+
+    .objective-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+      gap: 6px;
+    }
+
+    .objective-item {
+      border: 1px solid rgba(37, 50, 56, 0.14);
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: rgba(255, 255, 255, 0.8);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.84rem;
+    }
+
+    .objective-chip {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid rgba(37, 50, 56, 0.25);
+      display: inline-block;
+    }
+
+    .objective-item input {
+      width: 56px;
+      border: 1px solid rgba(37, 50, 56, 0.2);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font: inherit;
     }
 
     .pill {
@@ -423,6 +463,12 @@
       </div>
       <div class="top-right">
         <div class="controls">
+          <label class="pill" for="game-mode">Mode
+            <select id="game-mode">
+              <option value="classic" selected>Classic</option>
+              <option value="objective">Objective Mode</option>
+            </select>
+          </label>
           <label class="pill" for="rows">Rows
             <input id="rows" type="number" min="2" max="60" step="1" value="5" aria-label="Board rows in boxes" />
           </label>
@@ -459,6 +505,12 @@
         </div>
 
         <div class="status-row">
+          <section class="card" id="objective-card">
+            <h2>Objectives</h2>
+            <p class="hint compact" id="objective-hint">Load a color file to define objectives by palette key.</p>
+            <div id="objective-grid" class="objective-grid"></div>
+          </section>
+
           <section class="card">
             <h2>Score</h2>
             <div class="score-grid">
@@ -501,6 +553,7 @@
     const aiScoreEl = document.getElementById("ai-score");
     const rowsEl = document.getElementById("rows");
     const colsEl = document.getElementById("cols");
+      const gameModeEl = document.getElementById("game-mode");
     const edgeSizeEl = document.getElementById("edge-size");
     const zoomEl = document.getElementById("zoom");
     const zoomValueEl = document.getElementById("zoom-value");
@@ -513,6 +566,9 @@
     const previewMetaEl = document.getElementById("preview-meta");
     const newGameEl = document.getElementById("new-game");
     const aiHintEl = document.getElementById("ai-hint");
+      const objectiveCardEl = document.getElementById("objective-card");
+      const objectiveHintEl = document.getElementById("objective-hint");
+      const objectiveGridEl = document.getElementById("objective-grid");
 
     let boxRows = 5;
     let boxCols = 5;
@@ -522,7 +578,9 @@
     let vEdges = [];
     let boxes = [];
     let hiddenBoxColors = [];
+      let hiddenBoxTokens = [];
     let loadedArt = null;
+      let objectiveTargets = {};
     let currentPlayer = HUMAN;
     let gameOver = false;
     let edgePx = 36;
@@ -543,6 +601,7 @@
       vEdges = make2D(dotsRows - 1, dotsCols);
       boxes = make2D(boxRows, boxCols);
       hiddenBoxColors = createHiddenColorsForSize(boxRows, boxCols);
+      hiddenBoxTokens = createHiddenTokensForSize(boxRows, boxCols);
       currentPlayer = HUMAN;
       gameOver = false;
     }
@@ -570,6 +629,93 @@
       }
       return createDefaultHiddenColors(rows, cols);
     }
+
+      function createHiddenTokensForSize(rows, cols) {
+        if (loadedArt && loadedArt.height === rows && loadedArt.width === cols) {
+          return loadedArt.tokens.map((row) => row.slice());
+        }
+        return make2D(rows, cols, "_");
+      }
+
+      function buildObjectiveInputsFromLoadedArt() {
+        objectiveGridEl.innerHTML = "";
+        objectiveTargets = {};
+
+        if (!loadedArt || !loadedArt.paletteOrder || loadedArt.paletteOrder.length === 0) {
+          objectiveHintEl.textContent = "Load a color file to define objectives by palette key.";
+          return;
+        }
+
+        objectiveHintEl.textContent = "Set required counts per color. Values greater than 0 are win requirements.";
+        for (const token of loadedArt.paletteOrder) {
+          const row = document.createElement("label");
+          row.className = "objective-item";
+
+          const chip = document.createElement("span");
+          chip.className = "objective-chip";
+          chip.style.background = loadedArt.palette[token];
+          chip.title = token;
+
+          const textWrap = document.createElement("span");
+          const tag = document.createElement("strong");
+          tag.textContent = `${token}:`;
+          const input = document.createElement("input");
+          input.type = "number";
+          input.min = "0";
+          input.step = "1";
+          input.value = "0";
+          input.dataset.token = token;
+          input.addEventListener("input", syncObjectiveTargetsFromUI);
+
+          textWrap.appendChild(tag);
+          textWrap.appendChild(document.createTextNode(" "));
+          textWrap.appendChild(input);
+
+          row.appendChild(chip);
+          row.appendChild(textWrap);
+          objectiveGridEl.appendChild(row);
+        }
+
+        syncObjectiveTargetsFromUI();
+      }
+
+      function syncObjectiveTargetsFromUI() {
+        objectiveTargets = {};
+        for (const input of objectiveGridEl.querySelectorAll("input[data-token]")) {
+          const token = input.dataset.token;
+          const raw = Number(input.value);
+          const value = Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+          input.value = String(value);
+          objectiveTargets[token] = value;
+        }
+      }
+
+      function requiredObjectivesExist() {
+        return Object.values(objectiveTargets).some((value) => value > 0);
+      }
+
+      function countCapturedTokensByPlayer(player) {
+        const counts = {};
+        for (let r = 0; r < boxRows; r += 1) {
+          for (let c = 0; c < boxCols; c += 1) {
+            if (boxes[r][c] !== player) continue;
+            const token = hiddenBoxTokens[r]?.[c] || "_";
+            counts[token] = (counts[token] || 0) + 1;
+          }
+        }
+        return counts;
+      }
+
+      function hasMetObjectives(player) {
+        if (gameModeEl.value !== "objective") return false;
+        if (!requiredObjectivesExist()) return false;
+        const counts = countCapturedTokensByPlayer(player);
+        for (const [token, needed] of Object.entries(objectiveTargets)) {
+          if (needed <= 0) continue;
+          if ((counts[token] || 0) < needed) return false;
+        }
+        return true;
+      }
 
     function clearPreview(message = "No file loaded") {
       const ctx = artPreviewEl.getContext("2d");
@@ -639,6 +785,7 @@
         .filter((line) => line && !line.startsWith("#"));
 
       const palette = {};
+        const paletteOrder = [];
       for (const line of paletteLines) {
         const m = line.match(/^([^\s=]+)\s*=\s*\((\d+),(\d+),(\d+),(\d+)\)\s*$/);
         if (!m) continue;
@@ -651,6 +798,7 @@
           throw new Error(`Invalid RGBA value for palette token '${token}'.`);
         }
         palette[token] = rgbaString(r, g, b, a);
+        paletteOrder.push(token);
       }
 
       if (Object.keys(palette).length === 0) {
@@ -667,6 +815,7 @@
       }
 
       const colors = [];
+        const tokensGrid = [];
       for (let r = 0; r < height; r += 1) {
         const tokens = pixelLines[r].split(/\s+/).filter(Boolean);
         if (tokens.length !== width) {
@@ -679,9 +828,10 @@
           return palette[token];
         });
         colors.push(row);
+        tokensGrid.push(tokens);
       }
 
-      return { width, height, colors };
+      return { width, height, colors, tokens: tokensGrid, palette, paletteOrder };
     }
 
     async function onArtFileSelected(event) {
@@ -693,6 +843,7 @@
         loadedArt = parsed;
         artFileNameEl.textContent = file.name;
         renderPreview(parsed);
+        buildObjectiveInputsFromLoadedArt();
 
         rowsEl.value = String(parsed.height);
         colsEl.value = String(parsed.width);
@@ -701,6 +852,8 @@
       } catch (error) {
         artFileNameEl.textContent = "Invalid file";
         clearPreview("Preview unavailable");
+        loadedArt = null;
+        buildObjectiveInputsFromLoadedArt();
         setStatus(`Could not load color file: ${error.message}`);
       }
     }
@@ -1173,6 +1326,7 @@
     }
 
     function finishIfNeeded() {
+      if (gameModeEl.value === "objective") return false;
       if (!allBoxesClaimed()) return false;
       gameOver = true;
       const human = scoreOf(HUMAN);
@@ -1275,6 +1429,12 @@
       const boxesWon = resolveBoxesFromEdge(type, row, col, player);
       refreshBoardUI();
 
+      if (hasMetObjectives(player)) {
+        gameOver = true;
+        statusEl.textContent = `${player === HUMAN ? "You" : "Agent"} win by objective completion.`;
+        return;
+      }
+
       if (finishIfNeeded()) return;
       if (boxesWon === 0) {
         currentPlayer = player === HUMAN ? AI : HUMAN;
@@ -1335,8 +1495,19 @@
     function newGame() {
       const parsedRows = Number(rowsEl.value);
       const parsedCols = Number(colsEl.value);
-      const rows = Number.isFinite(parsedRows) ? Math.max(2, Math.min(60, Math.floor(parsedRows))) : 5;
-      const cols = Number.isFinite(parsedCols) ? Math.max(2, Math.min(60, Math.floor(parsedCols))) : 5;
+      let rows = Number.isFinite(parsedRows) ? Math.max(2, Math.min(60, Math.floor(parsedRows))) : 5;
+      let cols = Number.isFinite(parsedCols) ? Math.max(2, Math.min(60, Math.floor(parsedCols))) : 5;
+
+      if (gameModeEl.value === "objective") {
+        if (!loadedArt) {
+          setStatus("Objective Mode requires an uploaded color file.");
+          return;
+        }
+        rows = loadedArt.height;
+        cols = loadedArt.width;
+        syncObjectiveTargetsFromUI();
+      }
+
       rowsEl.value = String(rows);
       colsEl.value = String(cols);
       setupState(rows, cols);
@@ -1354,6 +1525,11 @@
     zoomEl.addEventListener("input", applyBoardSizing);
     zoomEl.addEventListener("change", applyBoardSizing);
     aiLogicEl.addEventListener("change", updateHintForAiLogic);
+    gameModeEl.addEventListener("change", () => {
+      const objectiveMode = gameModeEl.value === "objective";
+      objectiveCardEl.style.display = objectiveMode ? "grid" : "none";
+      newGame();
+    });
     autoPlayToggleEl.addEventListener("click", () => setAutoPlayEnabled(!autoPlayEnabled));
     autoLogicEl.addEventListener("change", () => {
       if (autoPlayEnabled && currentPlayer === HUMAN) maybeScheduleTurn();
@@ -1361,6 +1537,8 @@
     artFileEl.addEventListener("change", onArtFileSelected);
     applyBoardSizing();
     clearPreview();
+    buildObjectiveInputsFromLoadedArt();
+    objectiveCardEl.style.display = "none";
     updateHintForAiLogic();
     newGame();
   </script>
