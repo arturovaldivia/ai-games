@@ -1,0 +1,24 @@
+# PIXEL_ART_TEXT v1
+image: hulk.png
+width: 10
+height: 10
+mode: RGBA
+transparent_as_dot: false
+
+[PALETTE]
+A = (255,255,255,255)
+B = (17,24,31,255)
+C = (61,137,45,255)
+D = (98,173,66,255)
+
+[PIXELS]
+A A B B B B B B A A
+A A B B C C C B A A
+A A B C B D B C A A
+A A B D D A A D A A
+A A C D D A A D A A
+A D C D D D D D C A
+D D C C C D C C D D
+C C A A A A A A C C
+A A A A A A A A A A
+A A D C A A C D A A
