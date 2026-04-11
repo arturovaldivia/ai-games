@@ -15,6 +15,7 @@
       --ai: #b13a2d;
       --line-empty: #9eaaa7;
       --dot: #26353a;
+      --freeze-overlay-image: url("assets/red_icecube.png");
       --shadow: 0 10px 30px rgba(37, 50, 56, 0.16);
       --radius: 16px;
     }
@@ -267,6 +268,36 @@
       touch-action: none;
     }
 
+    .booster-ice {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      background: linear-gradient(135deg, #7faec8, #4f7ea2);
+      box-shadow: 0 8px 18px rgba(37, 50, 56, 0.2);
+      cursor: pointer;
+      user-select: none;
+      display: grid;
+      place-items: center;
+      position: relative;
+      touch-action: manipulation;
+    }
+
+    .booster-ice:not(.ready) {
+      cursor: not-allowed;
+      filter: saturate(0.7) brightness(0.95);
+    }
+
+    .booster-ice.used {
+      background: linear-gradient(135deg, #5b6672, #6b7784);
+      cursor: default;
+      filter: none;
+    }
+
+    .booster-ice.ready {
+      animation: ice-pulse 1.5s ease-in-out infinite;
+    }
+
     .booster-icon-img {
       width: 30px;
       height: 30px;
@@ -325,6 +356,21 @@
       filter: grayscale(1) opacity(0.75);
     }
 
+    .booster-ice:not(.ready) .booster-icon-img,
+    .booster-ice.used .booster-icon-img {
+      filter: grayscale(0.9) opacity(0.72);
+    }
+
+    @keyframes ice-pulse {
+      0%,
+      100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.03);
+      }
+    }
+
     .box.info-revealed {
       box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.65);
     }
@@ -381,6 +427,8 @@
       color: #fff;
       min-height: 34px;
       flex: 0 0 auto;
+      position: relative;
+      overflow: hidden;
     }
 
     .game-score-widget.human {
@@ -389,6 +437,30 @@
 
     .game-score-widget.ai {
       background: linear-gradient(135deg, rgba(163, 48, 33, 0.95), rgba(201, 80, 60, 0.95));
+    }
+
+    .game-score-widget.ai.frozen {
+      background: linear-gradient(135deg, rgba(98, 67, 67, 0.95), rgba(126, 88, 88, 0.95));
+      border-color: rgba(214, 240, 255, 0.8);
+      box-shadow: 0 10px 24px rgba(93, 73, 73, 0.36);
+    }
+
+    .game-score-widget.ai.frozen::after {
+      content: "";
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      background-image: url("assets/red_icecubes.png");
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.98;
+      filter: drop-shadow(0 2px 4px rgba(40, 16, 16, 0.55));
+      pointer-events: none;
+      z-index: 2;
     }
 
     .score-seg {
@@ -550,6 +622,33 @@
       opacity: 1;
       background: var(--ai);
       box-shadow: 0 0 0 2px rgba(177, 58, 45, 0.1);
+    }
+
+    .hedge.frozen-marker::after,
+    .vedge.frozen-marker::after {
+      content: "";
+      position: absolute;
+      width: calc(var(--cell-size) * 0.66);
+      height: calc(var(--cell-size) * 0.66);
+      background-image: var(--freeze-overlay-image);
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      pointer-events: none;
+      filter: drop-shadow(0 3px 6px rgba(36, 56, 74, 0.46));
+      z-index: 4;
+    }
+
+    .hedge.frozen-marker::after {
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -58%);
+    }
+
+    .vedge.frozen-marker::after {
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -58%);
     }
 
     .box {
@@ -1022,6 +1121,10 @@
             <img src="assets/flashlight.png" alt="" class="booster-icon-img" draggable="false" />
             <span id="bomb-booster-state" class="booster-state" aria-hidden="true">0/2</span>
           </div>
+          <div id="ice-booster" class="booster-ice ready" role="button" tabindex="0" aria-label="Ice cube ready. Use to freeze the agent for 2 turns." title="Ice cube ready. Use to freeze the agent for 2 turns.">
+            <img src="assets/icecube.png" alt="" class="booster-icon-img" draggable="false" />
+            <span id="ice-booster-state" class="booster-state" aria-hidden="true">GO</span>
+          </div>
           <label class="game-zoom" for="game-zoom">
             Zoom
             <input id="game-zoom" type="range" min="50" max="200" step="5" value="100" aria-label="Board zoom percentage in game" />
@@ -1099,6 +1202,8 @@
       const gameAiWidgetEl = document.getElementById("game-ai-widget");
       const bombBoosterEl = document.getElementById("bomb-booster");
       const bombBoosterStateEl = document.getElementById("bomb-booster-state");
+      const iceBoosterEl = document.getElementById("ice-booster");
+      const iceBoosterStateEl = document.getElementById("ice-booster-state");
 
     let boxRows = 5;
     let boxCols = 5;
@@ -1123,6 +1228,22 @@
     let infoRevealMask = [];
     let bombUses = 0;
     let bombScoreCheckpoint = 0;
+    let iceUsed = false;
+    let aiFrozenTurns = 0;
+    let lastAgentMove = null;
+
+    function resolveFreezeOverlayImage() {
+      const preferred = "assets/red_icecube.png";
+      const fallback = "assets/red_icecubes.png";
+      const img = new Image();
+      img.onload = () => {
+        document.documentElement.style.setProperty("--freeze-overlay-image", `url(\"${preferred}\")`);
+      };
+      img.onerror = () => {
+        document.documentElement.style.setProperty("--freeze-overlay-image", `url(\"${fallback}\")`);
+      };
+      img.src = preferred;
+    }
 
     function showScreen(name) {
       currentScreen = name;
@@ -1293,8 +1414,45 @@
       infoRevealMask = make2D(boxRows, boxCols, false);
       bombUses = 0;
       bombScoreCheckpoint = 0;
+      iceUsed = false;
+      aiFrozenTurns = 0;
+      lastAgentMove = null;
       currentPlayer = HUMAN;
       gameOver = false;
+    }
+
+    function canUseIceBooster() {
+      return !gameOver && !iceUsed && currentPlayer === HUMAN;
+    }
+
+    function updateIceUI() {
+      iceBoosterEl.classList.remove("ready", "used");
+      if (iceUsed) {
+        iceBoosterEl.classList.add("used");
+        iceBoosterStateEl.textContent = "Done";
+        iceBoosterEl.setAttribute("aria-label", "Ice cube used for this game.");
+        iceBoosterEl.title = "Ice cube used for this game.";
+        return;
+      }
+      if (canUseIceBooster()) {
+        iceBoosterEl.classList.add("ready");
+        iceBoosterStateEl.textContent = "GO";
+        iceBoosterEl.setAttribute("aria-label", "Ice cube ready. Use to freeze the agent for 2 turns.");
+        iceBoosterEl.title = "Ice cube ready. Use to freeze the agent for 2 turns.";
+      } else {
+        iceBoosterStateEl.textContent = "Wait";
+        iceBoosterEl.setAttribute("aria-label", "Ice cube locked. Available on your turn.");
+        iceBoosterEl.title = "Ice cube locked. Available on your turn.";
+      }
+    }
+
+    function useIceBooster() {
+      if (!canUseIceBooster()) return;
+      iceUsed = true;
+      aiFrozenTurns = 2;
+      refreshBoardUI();
+      setStatus("Ice cube used: agent frozen for 2 turns.");
+      maybeScheduleTurn();
     }
 
     function getBombNeededBoxes() {
@@ -2285,12 +2443,18 @@
         const type = edge.dataset.type;
         const row = Number(edge.dataset.row);
         const col = Number(edge.dataset.col);
-        edge.classList.remove("claimed-human", "claimed-ai", "open");
+        edge.classList.remove("claimed-human", "claimed-ai", "open", "frozen-marker");
 
         const owner = type === "h" ? hEdges[row][col] : vEdges[row][col];
         if (owner === HUMAN) edge.classList.add("claimed-human");
         else if (owner === AI) edge.classList.add("claimed-ai");
         else edge.classList.add("open");
+      }
+
+      if (aiFrozenTurns > 0 && lastAgentMove) {
+        const { type, row, col } = lastAgentMove;
+        const marker = boardEl.querySelector(`.${type === "h" ? "hedge" : "vedge"}[data-type="${type}"][data-row="${row}"][data-col="${col}"]`);
+        if (marker) marker.classList.add("frozen-marker");
       }
 
       for (const boxEl of boardEl.querySelectorAll(".box")) {
@@ -2316,7 +2480,9 @@
       aiScoreEl.textContent = String(scoreOf(AI));
       renderGameScoreWidget(gameHumanWidgetEl, HUMAN, "You");
       renderGameScoreWidget(gameAiWidgetEl, AI, "Agent");
+      gameAiWidgetEl.classList.toggle("frozen", aiFrozenTurns > 0);
       updateBombUI();
+      updateIceUI();
       refreshObjectiveScoreUI();
     }
 
@@ -2364,6 +2530,9 @@
 
     function applyMove(type, row, col, player) {
       claimEdge(type, row, col, player);
+      if (player === AI) {
+        lastAgentMove = { type, row, col };
+      }
       const boxesWon = resolveBoxesFromEdge(type, row, col, player);
       refreshBoardUI();
 
@@ -2416,6 +2585,15 @@
       if (gameOver || currentScreen !== "game") return;
 
       if (currentPlayer === AI) {
+        if (aiFrozenTurns > 0) {
+          aiFrozenTurns -= 1;
+          currentPlayer = HUMAN;
+          const turnsLeft = aiFrozenTurns;
+          setStatus(`Agent is frozen. ${turnsLeft} freeze turn${turnsLeft === 1 ? "" : "s"} left.`);
+          refreshBoardUI();
+          maybeScheduleTurn();
+          return;
+        }
         turnTimerId = window.setTimeout(() => {
           turnTimerId = null;
           playAgentTurn(AI, aiLogicEl.value);
@@ -2516,6 +2694,14 @@
       if (!target) return;
       applyBombReveal(target.row, target.col);
     });
+    iceBoosterEl.addEventListener("click", () => useIceBooster());
+    iceBoosterEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        useIceBooster();
+      }
+    });
+    resolveFreezeOverlayImage();
     applyBoardSizing();
     clearPreview();
     buildObjectiveInputsFromLoadedArt();
