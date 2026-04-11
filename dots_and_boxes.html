@@ -340,11 +340,25 @@
       border: 1px solid rgba(255, 255, 255, 0.35);
       font-size: 0.62rem;
       font-weight: 700;
-      display: grid;
-      place-items: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
       line-height: 1;
       padding: 0 6px;
       pointer-events: none;
+    }
+
+    .booster-state.cost::after {
+      content: "";
+      width: 9px;
+      height: 9px;
+      background-image: url("assets/energy.png");
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      display: inline-block;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
     }
 
     .booster-bomb.ready {
@@ -1256,7 +1270,6 @@
     let currentScreen = "config";
     let infoRevealMask = [];
     let bombUses = 0;
-    let bombScoreCheckpoint = 0;
     let aiFrozenTurns = 0;
     let lastAgentMove = null;
     let energyPoints = 0;
@@ -1442,7 +1455,6 @@
       hiddenBoxTokens = createHiddenTokensForSize(boxRows, boxCols);
       infoRevealMask = make2D(boxRows, boxCols, false);
       bombUses = 0;
-      bombScoreCheckpoint = 0;
       aiFrozenTurns = 0;
       lastAgentMove = null;
       energyPoints = 0;
@@ -1462,6 +1474,7 @@
 
     function updateIceUI() {
       iceBoosterEl.classList.remove("ready", "used");
+      iceBoosterStateEl.classList.remove("cost");
       if (canUseIceBooster()) {
         iceBoosterEl.classList.add("ready");
         iceBoosterStateEl.textContent = "GO";
@@ -1469,6 +1482,7 @@
         iceBoosterEl.title = `Ice cube ready. Costs ${ICE_ENERGY_COST} energy and freezes the agent for 2 turns.`;
       } else {
         iceBoosterStateEl.textContent = `${ICE_ENERGY_COST}`;
+        iceBoosterStateEl.classList.add("cost");
         const shown = Math.min(ICE_ENERGY_COST, energyPoints);
         iceBoosterEl.setAttribute("aria-label", `Ice cube unavailable. Need ${ICE_ENERGY_COST} energy, current ${shown}.`);
         iceBoosterEl.title = `Ice cube unavailable. Need ${ICE_ENERGY_COST} energy, current ${shown}.`;
@@ -1484,50 +1498,47 @@
       maybeScheduleTurn();
     }
 
-    function getBombNeededBoxes() {
+    function getBombNeededEnergy() {
       return 2 * (2 ** bombUses);
     }
 
-    function getBombProgressBoxes() {
-      return Math.max(0, scoreOf(HUMAN) - bombScoreCheckpoint);
-    }
-
     function isBombAvailable() {
-      return !gameOver && currentPlayer === HUMAN && getBombProgressBoxes() >= getBombNeededBoxes();
+      return !gameOver && currentPlayer === HUMAN && energyPoints >= getBombNeededEnergy();
     }
 
     function updateBombUI() {
-      const needed = getBombNeededBoxes();
-      const progress = getBombProgressBoxes();
+      const needed = getBombNeededEnergy();
       const available = isBombAvailable();
       bombBoosterEl.classList.remove("ready", "used");
+      bombBoosterStateEl.classList.remove("cost");
 
       if (available) {
         bombBoosterEl.classList.add("ready");
         bombBoosterStateEl.textContent = "GO";
-        bombBoosterEl.setAttribute("aria-label", `Bomb ready. Drag to reveal a 3 by 3 area. Next charge needs ${needed * 2} boxes after use.`);
-        bombBoosterEl.title = `Bomb ready. Drag to reveal a 3 by 3 area. Next charge needs ${needed * 2} boxes after use.`;
+        bombBoosterEl.setAttribute("aria-label", `Bomb ready. Costs ${needed} energy. Drag to reveal a 3 by 3 area.`);
+        bombBoosterEl.title = `Bomb ready. Costs ${needed} energy. Drag to reveal a 3 by 3 area.`;
         bombBoosterEl.draggable = true;
       } else {
-        const shown = Math.min(needed, progress);
-        bombBoosterStateEl.textContent = `${shown}/${needed}`;
-        bombBoosterEl.setAttribute("aria-label", `Bomb charging. ${shown} of ${needed} boxes collected since last use.`);
-        bombBoosterEl.title = `Bomb charging. ${shown} of ${needed} boxes collected since last use.`;
+        bombBoosterStateEl.textContent = `${needed}`;
+        bombBoosterStateEl.classList.add("cost");
+        bombBoosterEl.setAttribute("aria-label", `Bomb unavailable. Need ${needed} energy, current ${energyPoints}.`);
+        bombBoosterEl.title = `Bomb unavailable. Need ${needed} energy, current ${energyPoints}.`;
         bombBoosterEl.draggable = false;
       }
     }
 
     function applyBombReveal(centerRow, centerCol) {
+      const cost = getBombNeededEnergy();
       for (let r = centerRow - 1; r <= centerRow + 1; r += 1) {
         for (let c = centerCol - 1; c <= centerCol + 1; c += 1) {
           if (r < 0 || c < 0 || r >= boxRows || c >= boxCols) continue;
           infoRevealMask[r][c] = true;
         }
       }
+      energyPoints = Math.max(0, energyPoints - cost);
       bombUses += 1;
-      bombScoreCheckpoint = scoreOf(HUMAN);
       refreshBoardUI();
-      setStatus("Bomb used: a 3x3 area was revealed.");
+      setStatus(`Bomb used: -${cost} energy. A 3x3 area was revealed.`);
     }
 
     function getNearestBoxFromPoint(clientX, clientY) {
