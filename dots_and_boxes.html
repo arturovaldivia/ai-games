@@ -298,6 +298,28 @@
       animation: ice-pulse 1.5s ease-in-out infinite;
     }
 
+    .booster-energy {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      background: linear-gradient(135deg, #2f6e3e, #3f9656);
+      box-shadow: 0 8px 18px rgba(37, 50, 56, 0.2);
+      user-select: none;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+
+    .booster-energy .booster-icon-img {
+      filter: none;
+    }
+
+    .booster-energy .booster-state {
+      background: rgba(13, 38, 20, 0.9);
+      color: #d4ffde;
+    }
+
     .booster-icon-img {
       width: 30px;
       height: 30px;
@@ -1117,6 +1139,10 @@
           </div>
         </div>
         <div class="game-bottom-ui" aria-label="In-game boosters and zoom">
+          <div id="energy-widget" class="booster-energy" role="status" aria-label="Energy">
+            <img src="assets/energy.png" alt="" class="booster-icon-img" draggable="false" />
+            <span id="energy-state" class="booster-state" aria-hidden="true">0</span>
+          </div>
           <div id="bomb-booster" class="booster-bomb" draggable="false" role="button" tabindex="0" aria-label="Bomb locked. Complete 2 boxes to unlock." title="Bomb locked. Complete 2 boxes to unlock.">
             <img src="assets/flashlight.png" alt="" class="booster-icon-img" draggable="false" />
             <span id="bomb-booster-state" class="booster-state" aria-hidden="true">0/2</span>
@@ -1159,6 +1185,7 @@
   <script>
     const HUMAN = "human";
     const AI = "ai";
+    const ICE_ENERGY_COST = 3;
 
     const boardEl = document.getElementById("board");
     const statusEl = document.getElementById("status");
@@ -1204,6 +1231,8 @@
       const bombBoosterStateEl = document.getElementById("bomb-booster-state");
       const iceBoosterEl = document.getElementById("ice-booster");
       const iceBoosterStateEl = document.getElementById("ice-booster-state");
+      const energyWidgetEl = document.getElementById("energy-widget");
+      const energyStateEl = document.getElementById("energy-state");
 
     let boxRows = 5;
     let boxCols = 5;
@@ -1228,9 +1257,9 @@
     let infoRevealMask = [];
     let bombUses = 0;
     let bombScoreCheckpoint = 0;
-    let iceUsed = false;
     let aiFrozenTurns = 0;
     let lastAgentMove = null;
+    let energyPoints = 0;
 
     function resolveFreezeOverlayImage() {
       const preferred = "assets/red_icecube.png";
@@ -1414,44 +1443,44 @@
       infoRevealMask = make2D(boxRows, boxCols, false);
       bombUses = 0;
       bombScoreCheckpoint = 0;
-      iceUsed = false;
       aiFrozenTurns = 0;
       lastAgentMove = null;
+      energyPoints = 0;
       currentPlayer = HUMAN;
       gameOver = false;
     }
 
+    function updateEnergyUI() {
+      energyStateEl.textContent = String(energyPoints);
+      energyWidgetEl.setAttribute("aria-label", `Energy ${energyPoints}`);
+      energyWidgetEl.title = `Energy ${energyPoints}`;
+    }
+
     function canUseIceBooster() {
-      return !gameOver && !iceUsed && currentPlayer === HUMAN;
+      return !gameOver && currentPlayer === HUMAN && energyPoints >= ICE_ENERGY_COST;
     }
 
     function updateIceUI() {
       iceBoosterEl.classList.remove("ready", "used");
-      if (iceUsed) {
-        iceBoosterEl.classList.add("used");
-        iceBoosterStateEl.textContent = "Done";
-        iceBoosterEl.setAttribute("aria-label", "Ice cube used for this game.");
-        iceBoosterEl.title = "Ice cube used for this game.";
-        return;
-      }
       if (canUseIceBooster()) {
         iceBoosterEl.classList.add("ready");
         iceBoosterStateEl.textContent = "GO";
-        iceBoosterEl.setAttribute("aria-label", "Ice cube ready. Use to freeze the agent for 2 turns.");
-        iceBoosterEl.title = "Ice cube ready. Use to freeze the agent for 2 turns.";
+        iceBoosterEl.setAttribute("aria-label", `Ice cube ready. Costs ${ICE_ENERGY_COST} energy and freezes the agent for 2 turns.`);
+        iceBoosterEl.title = `Ice cube ready. Costs ${ICE_ENERGY_COST} energy and freezes the agent for 2 turns.`;
       } else {
-        iceBoosterStateEl.textContent = "Wait";
-        iceBoosterEl.setAttribute("aria-label", "Ice cube locked. Available on your turn.");
-        iceBoosterEl.title = "Ice cube locked. Available on your turn.";
+        iceBoosterStateEl.textContent = `${ICE_ENERGY_COST}`;
+        const shown = Math.min(ICE_ENERGY_COST, energyPoints);
+        iceBoosterEl.setAttribute("aria-label", `Ice cube unavailable. Need ${ICE_ENERGY_COST} energy, current ${shown}.`);
+        iceBoosterEl.title = `Ice cube unavailable. Need ${ICE_ENERGY_COST} energy, current ${shown}.`;
       }
     }
 
     function useIceBooster() {
       if (!canUseIceBooster()) return;
-      iceUsed = true;
-      aiFrozenTurns = 2;
+      energyPoints -= ICE_ENERGY_COST;
+      aiFrozenTurns += 2;
       refreshBoardUI();
-      setStatus("Ice cube used: agent frozen for 2 turns.");
+      setStatus(`Ice cube used: -${ICE_ENERGY_COST} energy. Agent frozen for 2 turns.`);
       maybeScheduleTurn();
     }
 
@@ -2481,6 +2510,7 @@
       renderGameScoreWidget(gameHumanWidgetEl, HUMAN, "You");
       renderGameScoreWidget(gameAiWidgetEl, AI, "Agent");
       gameAiWidgetEl.classList.toggle("frozen", aiFrozenTurns > 0);
+      updateEnergyUI();
       updateBombUI();
       updateIceUI();
       refreshObjectiveScoreUI();
@@ -2534,6 +2564,9 @@
         lastAgentMove = { type, row, col };
       }
       const boxesWon = resolveBoxesFromEdge(type, row, col, player);
+      if (player === HUMAN && boxesWon > 0) {
+        energyPoints += boxesWon;
+      }
       refreshBoardUI();
 
       if (hasMetObjectives(player)) {
