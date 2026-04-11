@@ -229,11 +229,6 @@
     }
 
     .game-zoom {
-      position: absolute;
-      bottom: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 3;
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -244,6 +239,104 @@
       box-shadow: 0 8px 18px rgba(37, 50, 56, 0.14);
       font-size: 0.84rem;
       color: var(--ink);
+    }
+
+    .game-bottom-ui {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .booster-bomb {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: linear-gradient(135deg, #5f6770, #868f98);
+      box-shadow: 0 8px 18px rgba(37, 50, 56, 0.2);
+      cursor: not-allowed;
+      user-select: none;
+      display: grid;
+      place-items: center;
+      position: relative;
+      touch-action: none;
+    }
+
+    .booster-icon-img {
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+      filter: grayscale(0.35) contrast(0.95);
+      pointer-events: none;
+    }
+
+    .booster-state {
+      position: absolute;
+      right: -4px;
+      bottom: -3px;
+      min-width: 24px;
+      height: 18px;
+      border-radius: 999px;
+      background: rgba(22, 27, 32, 0.9);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      font-size: 0.62rem;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      line-height: 1;
+      padding: 0 6px;
+      pointer-events: none;
+    }
+
+    .booster-bomb.ready {
+      background: linear-gradient(135deg, #fbbf24, #f97316);
+      cursor: grab;
+      border-color: rgba(255, 255, 255, 0.5);
+      box-shadow: 0 10px 24px rgba(185, 105, 16, 0.34);
+      animation: bomb-pop 1.3s ease-in-out infinite;
+    }
+
+    .booster-bomb.ready .booster-icon-img {
+      filter: none;
+    }
+
+    .booster-bomb.ready .booster-state {
+      background: rgba(42, 26, 0, 0.88);
+      color: #ffe7b0;
+    }
+
+    .booster-bomb.ready:active {
+      cursor: grabbing;
+    }
+
+    .booster-bomb.used {
+      background: linear-gradient(135deg, #4b5563, #677280);
+      cursor: default;
+      animation: none;
+    }
+
+    .booster-bomb.used .booster-icon-img {
+      filter: grayscale(1) opacity(0.75);
+    }
+
+    .box.info-revealed {
+      box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.65);
+    }
+
+    @keyframes bomb-pop {
+      0%,
+      100% {
+        transform: translateY(0) scale(1);
+      }
+      50% {
+        transform: translateY(-1px) scale(1.02);
+      }
     }
 
     .game-side-ui {
@@ -784,6 +877,9 @@
 
       .game-zoom {
         padding: 8px 10px;
+      }
+
+      .game-bottom-ui {
         bottom: 10px;
       }
 
@@ -921,12 +1017,18 @@
             <div id="game-ai-widget" class="game-score-widget ai"></div>
           </div>
         </div>
-        <label class="game-zoom" for="game-zoom">
-          Zoom
-          <input id="game-zoom" type="range" min="50" max="200" step="5" value="100" aria-label="Board zoom percentage in game" />
-          <span id="game-zoom-value" class="game-zoom-value">100%</span>
-        </label>
-        <div class="board-wrap">
+        <div class="game-bottom-ui" aria-label="In-game boosters and zoom">
+          <div id="bomb-booster" class="booster-bomb" draggable="false" role="button" tabindex="0" aria-label="Bomb locked. Complete 2 boxes to unlock." title="Bomb locked. Complete 2 boxes to unlock.">
+            <img src="assets/flashlight.png" alt="" class="booster-icon-img" draggable="false" />
+            <span id="bomb-booster-state" class="booster-state" aria-hidden="true">0/2</span>
+          </div>
+          <label class="game-zoom" for="game-zoom">
+            Zoom
+            <input id="game-zoom" type="range" min="50" max="200" step="5" value="100" aria-label="Board zoom percentage in game" />
+            <span id="game-zoom-value" class="game-zoom-value">100%</span>
+          </label>
+        </div>
+        <div id="game-board-wrap" class="board-wrap">
           <div id="board" class="board" aria-label="Dots and Boxes board"></div>
         </div>
         <div class="rotate-hint" aria-live="polite">Rotate your device to landscape to play.</div>
@@ -990,10 +1092,13 @@
       const gameScreenEl = document.getElementById("game-screen");
       const gameBackEl = document.getElementById("game-back");
       const gameRestartEl = document.getElementById("game-restart");
+      const gameBoardWrapEl = document.getElementById("game-board-wrap");
       const gameZoomEl = document.getElementById("game-zoom");
       const gameZoomValueEl = document.getElementById("game-zoom-value");
       const gameHumanWidgetEl = document.getElementById("game-human-widget");
       const gameAiWidgetEl = document.getElementById("game-ai-widget");
+      const bombBoosterEl = document.getElementById("bomb-booster");
+      const bombBoosterStateEl = document.getElementById("bomb-booster-state");
 
     let boxRows = 5;
     let boxCols = 5;
@@ -1015,6 +1120,9 @@
     let turnTimerId = null;
     let confettiRaf = null;
     let currentScreen = "config";
+    let infoRevealMask = [];
+    let bombUses = 0;
+    let bombScoreCheckpoint = 0;
 
     function showScreen(name) {
       currentScreen = name;
@@ -1182,8 +1290,80 @@
       hiddenBoxColors = createHiddenColorsForSize(boxRows, boxCols);
       hiddenBoxGrayColors = createGrayMaskFromColors(hiddenBoxColors);
       hiddenBoxTokens = createHiddenTokensForSize(boxRows, boxCols);
+      infoRevealMask = make2D(boxRows, boxCols, false);
+      bombUses = 0;
+      bombScoreCheckpoint = 0;
       currentPlayer = HUMAN;
       gameOver = false;
+    }
+
+    function getBombNeededBoxes() {
+      return 2 * (2 ** bombUses);
+    }
+
+    function getBombProgressBoxes() {
+      return Math.max(0, scoreOf(HUMAN) - bombScoreCheckpoint);
+    }
+
+    function isBombAvailable() {
+      return !gameOver && currentPlayer === HUMAN && getBombProgressBoxes() >= getBombNeededBoxes();
+    }
+
+    function updateBombUI() {
+      const needed = getBombNeededBoxes();
+      const progress = getBombProgressBoxes();
+      const available = isBombAvailable();
+      bombBoosterEl.classList.remove("ready", "used");
+
+      if (available) {
+        bombBoosterEl.classList.add("ready");
+        bombBoosterStateEl.textContent = "GO";
+        bombBoosterEl.setAttribute("aria-label", `Bomb ready. Drag to reveal a 3 by 3 area. Next charge needs ${needed * 2} boxes after use.`);
+        bombBoosterEl.title = `Bomb ready. Drag to reveal a 3 by 3 area. Next charge needs ${needed * 2} boxes after use.`;
+        bombBoosterEl.draggable = true;
+      } else {
+        const shown = Math.min(needed, progress);
+        bombBoosterStateEl.textContent = `${shown}/${needed}`;
+        bombBoosterEl.setAttribute("aria-label", `Bomb charging. ${shown} of ${needed} boxes collected since last use.`);
+        bombBoosterEl.title = `Bomb charging. ${shown} of ${needed} boxes collected since last use.`;
+        bombBoosterEl.draggable = false;
+      }
+    }
+
+    function applyBombReveal(centerRow, centerCol) {
+      for (let r = centerRow - 1; r <= centerRow + 1; r += 1) {
+        for (let c = centerCol - 1; c <= centerCol + 1; c += 1) {
+          if (r < 0 || c < 0 || r >= boxRows || c >= boxCols) continue;
+          infoRevealMask[r][c] = true;
+        }
+      }
+      bombUses += 1;
+      bombScoreCheckpoint = scoreOf(HUMAN);
+      refreshBoardUI();
+      setStatus("Bomb used: a 3x3 area was revealed.");
+    }
+
+    function getNearestBoxFromPoint(clientX, clientY) {
+      const el = document.elementFromPoint(clientX, clientY);
+      const directBox = el && el.closest ? el.closest(".box") : null;
+      if (directBox) {
+        return {
+          row: Number(directBox.dataset.row),
+          col: Number(directBox.dataset.col),
+        };
+      }
+
+      const rect = boardEl.getBoundingClientRect();
+      if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+        return null;
+      }
+
+      const cell = getDisplayCellPx();
+      const relX = clientX - rect.left;
+      const relY = clientY - rect.top;
+      const col = Math.max(0, Math.min(boxCols - 1, Math.round((relX / cell - 1) / 2)));
+      const row = Math.max(0, Math.min(boxRows - 1, Math.round((relY / cell - 1) / 2)));
+      return { row, col };
     }
 
     function clamp01(value) {
@@ -2116,13 +2296,19 @@
       for (const boxEl of boardEl.querySelectorAll(".box")) {
         const row = Number(boxEl.dataset.row);
         const col = Number(boxEl.dataset.col);
-        boxEl.classList.remove("human", "ai", "revealed");
+        boxEl.classList.remove("human", "ai", "revealed", "info-revealed");
         const owner = boxes[row][col];
         if (owner) {
           boxEl.classList.add(owner, "revealed");
           boxEl.style.background = hiddenBoxColors[row]?.[col] || "rgba(220, 220, 220, 0.9)";
         } else {
-          boxEl.style.background = hiddenBoxGrayColors[row]?.[col] || "rgba(176, 182, 188, 0.26)";
+          const informed = infoRevealMask[row]?.[col] === true;
+          if (informed) {
+            boxEl.classList.add("info-revealed");
+            boxEl.style.background = hiddenBoxColors[row]?.[col] || "rgba(220, 220, 220, 0.9)";
+          } else {
+            boxEl.style.background = hiddenBoxGrayColors[row]?.[col] || "rgba(176, 182, 188, 0.26)";
+          }
         }
       }
 
@@ -2130,6 +2316,7 @@
       aiScoreEl.textContent = String(scoreOf(AI));
       renderGameScoreWidget(gameHumanWidgetEl, HUMAN, "You");
       renderGameScoreWidget(gameAiWidgetEl, AI, "Agent");
+      updateBombUI();
       refreshObjectiveScoreUI();
     }
 
@@ -2307,6 +2494,28 @@
     });
     gameBackEl.addEventListener("click", () => showScreen("config"));
     gameRestartEl.addEventListener("click", () => newGame());
+    bombBoosterEl.addEventListener("dragstart", (event) => {
+      if (!isBombAvailable()) {
+        event.preventDefault();
+        return;
+      }
+      event.dataTransfer.setData("text/plain", "bomb");
+      event.dataTransfer.effectAllowed = "copy";
+    });
+    gameBoardWrapEl.addEventListener("dragover", (event) => {
+      if (!isBombAvailable() || currentScreen !== "game") return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    });
+    gameBoardWrapEl.addEventListener("drop", (event) => {
+      if (!isBombAvailable() || currentScreen !== "game") return;
+      const payload = event.dataTransfer.getData("text/plain");
+      if (payload !== "bomb") return;
+      event.preventDefault();
+      const target = getNearestBoxFromPoint(event.clientX, event.clientY);
+      if (!target) return;
+      applyBombReveal(target.row, target.col);
+    });
     applyBoardSizing();
     clearPreview();
     buildObjectiveInputsFromLoadedArt();
