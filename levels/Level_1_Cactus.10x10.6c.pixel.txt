@@ -1,0 +1,29 @@
+# PIXEL_ART_TEXT v1
+image: Cactus.png
+width: 10
+height: 10
+mode: RGBA
+transparent_as_dot: false
+
+[PALETTE]
+A = (255,255,255,255)
+B = (67,176,42,255)
+C = (16,24,32,255)
+D = (0,140,21,255)
+E = (241,235,156,255)
+F = (252,227,0,255)
+
+[PIXELS]
+A A A A B B A A A A
+A A A B B B B A A A
+B B A B C B C A A A
+B B A B B A B A B B
+B B D B B B B D B B
+B B D B B B B D B B
+A A A D D D D A A A
+A A E E E E E E A A
+A A F F F F F F A A
+A A A F F F F A A A
+
+[DIFFICULTY]
+A = 1
