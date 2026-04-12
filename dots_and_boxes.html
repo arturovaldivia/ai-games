@@ -557,6 +557,22 @@
       border: 1px solid rgba(37, 50, 56, 0.2);
     }
 
+    .hud-icon-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      padding: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    .hud-icon-btn img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
     .board-wrap {
       background: #fff;
       border: 1px solid rgba(37, 50, 56, 0.1);
@@ -881,14 +897,14 @@
     }
 
     .end-panel {
-      width: min(760px, 100%);
-      border-radius: 18px;
+      width: min(440px, 96%);
+      border-radius: 10px;
       border: 1px solid rgba(37, 50, 56, 0.16);
       background: #fffdf9;
       box-shadow: 0 18px 44px rgba(17, 25, 30, 0.36);
       padding: 16px;
       display: grid;
-      grid-template-columns: 200px 1fr;
+      grid-template-columns: 1fr;
       gap: 14px;
       align-items: start;
       animation: fade-slide 230ms ease both;
@@ -922,7 +938,7 @@
 
     #end-image {
       width: 100%;
-      max-width: 180px;
+      max-width: 100%;
       aspect-ratio: 1;
       height: auto;
       image-rendering: pixelated;
@@ -1143,7 +1159,9 @@
     <section id="game-screen" class="screen screen-game" aria-label="Game board screen">
       <main class="game-stage">
         <div class="game-hud" aria-label="In-game controls">
-          <button id="game-back" type="button" class="hud-btn secondary">Back to Config</button>
+          <button id="game-back" type="button" class="hud-btn secondary hud-icon-btn" aria-label="Back to config" title="Back to config">
+            <img src="assets/backarrow.png" alt="" draggable="false" />
+          </button>
           <button id="game-restart" type="button" class="hud-btn">Restart</button>
         </div>
         <div class="game-side-ui" aria-label="In-game score and zoom">
@@ -1183,7 +1201,7 @@
     <canvas id="confetti-canvas" aria-hidden="true"></canvas>
     <section id="end-panel" class="end-panel draw">
       <div class="end-image-wrap">
-        <canvas id="end-image" width="220" height="220" aria-label="Completed board image"></canvas>
+        <canvas id="end-image" width="320" height="320" aria-label="Completed board image"></canvas>
       </div>
       <div class="end-copy">
         <h3 id="end-title">Game Over</h3>
@@ -1326,26 +1344,44 @@
       confettiCanvasEl.width = Math.max(1, Math.floor(rect.width));
       confettiCanvasEl.height = Math.max(1, Math.floor(rect.height));
 
-      const colors = ["#ffd166", "#06d6a0", "#118ab2", "#ef476f", "#ff9f1c", "#8ac926"];
-      const pieces = Array.from({ length: 170 }, () => ({
-        x: Math.random() * confettiCanvasEl.width,
-        y: -20 - Math.random() * confettiCanvasEl.height * 0.35,
-        w: 4 + Math.random() * 6,
-        h: 7 + Math.random() * 8,
-        vx: -1.8 + Math.random() * 3.6,
-        vy: 1.6 + Math.random() * 2.4,
-        g: 0.03 + Math.random() * 0.05,
-        rot: Math.random() * Math.PI,
-        vr: -0.2 + Math.random() * 0.4,
-        color: colors[Math.floor(Math.random() * colors.length)],
-      }));
+      const colors = [
+        "#ffd166", "#a8dadc", "#e9c46a", "#90be6d",
+        "#f4a261", "#b5ead7", "#c77dff", "#ffc8dd",
+        "#caffbf", "#9bf6ff", "#fdffb6", "#ffadad",
+      ];
+      const cw = confettiCanvasEl.width;
+      const ch = confettiCanvasEl.height;
+      const cx = cw / 2;
+      const cy = ch * 0.42;
+      const pieces = Array.from({ length: 110 }, () => {
+        const angle = -Math.PI * 0.5 + (-0.85 + Math.random() * 1.7);
+        const speed = 4 + Math.random() * 9;
+        return {
+          x: cx + (-25 + Math.random() * 50),
+          y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          g: 0.2 + Math.random() * 0.14,
+          w: 4 + Math.random() * 6,
+          h: 6 + Math.random() * 9,
+          rot: Math.random() * Math.PI * 2,
+          vr: -0.22 + Math.random() * 0.44,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          isCircle: Math.random() < 0.35,
+        };
+      });
 
       let frame = 0;
-      const maxFrames = 220;
+      const maxFrames = 190;
+      const fadeStart = 120;
 
       function tick() {
         frame += 1;
-        ctx.clearRect(0, 0, confettiCanvasEl.width, confettiCanvasEl.height);
+        ctx.clearRect(0, 0, cw, ch);
+        const alpha = frame >= fadeStart
+          ? Math.max(0, 1 - (frame - fadeStart) / (maxFrames - fadeStart))
+          : 1;
+        ctx.globalAlpha = alpha;
 
         for (const p of pieces) {
           p.vy += p.g;
@@ -1353,17 +1389,17 @@
           p.y += p.vy;
           p.rot += p.vr;
 
-          if (p.y > confettiCanvasEl.height + 20) {
-            p.y = -20;
-            p.x = Math.random() * confettiCanvasEl.width;
-            p.vy = 1.4 + Math.random() * 2.2;
-          }
-
           ctx.save();
           ctx.translate(p.x, p.y);
           ctx.rotate(p.rot);
           ctx.fillStyle = p.color;
-          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          if (p.isCircle) {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          }
           ctx.restore();
         }
 
