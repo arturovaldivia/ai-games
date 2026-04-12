@@ -1288,6 +1288,8 @@
     let currentScreen = "config";
     let infoRevealMask = [];
     let bombUses = 0;
+    let bombTouchActive = false;
+    let bombGhostEl = null;
     let aiFrozenTurns = 0;
     let lastAgentMove = null;
     let energyPoints = 0;
@@ -2774,7 +2776,69 @@
       if (!target) return;
       applyBombReveal(target.row, target.col);
     });
+    // ── Touch drag for bomb (HTML5 drag API not supported on iOS/iPadOS) ──
+    bombBoosterEl.addEventListener("touchstart", (event) => {
+      if (!isBombAvailable()) return;
+      event.preventDefault();
+      bombTouchActive = true;
+      const touch = event.touches[0];
+      bombGhostEl = document.createElement("div");
+      bombGhostEl.style.cssText = [
+        "position:fixed",
+        "width:56px",
+        "height:56px",
+        "border-radius:50%",
+        "background:linear-gradient(135deg,#5f6770,#868f98)",
+        "box-shadow:0 8px 18px rgba(37,50,56,0.4)",
+        "border:2px solid rgba(255,255,255,0.55)",
+        "display:grid",
+        "place-items:center",
+        "pointer-events:none",
+        "z-index:9999",
+        "opacity:0.9",
+        "transform:translate(-50%,-50%) scale(1.15)",
+        `left:${touch.clientX}px`,
+        `top:${touch.clientY}px`,
+      ].join(";");
+      const img = document.createElement("img");
+      img.src = "assets/flashlight.png";
+      img.style.cssText = "width:30px;height:30px;object-fit:contain;pointer-events:none";
+      bombGhostEl.appendChild(img);
+      document.body.appendChild(bombGhostEl);
+    }, { passive: false });
+    bombBoosterEl.addEventListener("touchmove", (event) => {
+      if (!bombTouchActive) return;
+      event.preventDefault();
+      const touch = event.touches[0];
+      if (bombGhostEl) {
+        bombGhostEl.style.left = touch.clientX + "px";
+        bombGhostEl.style.top = touch.clientY + "px";
+      }
+    }, { passive: false });
+    function finishBombTouch(clientX, clientY) {
+      bombTouchActive = false;
+      if (bombGhostEl) { bombGhostEl.remove(); bombGhostEl = null; }
+      if (!isBombAvailable() || currentScreen !== "game") return;
+      const target = getNearestBoxFromPoint(clientX, clientY);
+      if (!target) return;
+      applyBombReveal(target.row, target.col);
+    }
+    bombBoosterEl.addEventListener("touchend", (event) => {
+      if (!bombTouchActive) return;
+      event.preventDefault();
+      const touch = event.changedTouches[0];
+      finishBombTouch(touch.clientX, touch.clientY);
+    }, { passive: false });
+    bombBoosterEl.addEventListener("touchcancel", () => {
+      bombTouchActive = false;
+      if (bombGhostEl) { bombGhostEl.remove(); bombGhostEl = null; }
+    });
+
     iceBoosterEl.addEventListener("click", () => useIceBooster());
+    iceBoosterEl.addEventListener("touchend", (event) => {
+      event.preventDefault();
+      useIceBooster();
+    }, { passive: false });
     iceBoosterEl.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
