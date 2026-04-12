@@ -1,0 +1,31 @@
+# PIXEL_ART_TEXT v1
+image: Fraise.png
+width: 10
+height: 10
+mode: RGBA
+transparent_as_dot: false
+
+[PALETTE]
+A = (255,255,255,255)
+B = (0,140,21,255)
+C = (67,176,42,255)
+D = (249,66,58,255)
+E = (255,62,165,255)
+F = (16,24,32,255)
+G = (239,186,225,255)
+
+[PIXELS]
+A A A A B B A A A A
+A A C C C C C C A A
+A C C C D C C C C A
+A C C E D D C D C A
+A D D D D E D D E A
+A D A F D D F A D A
+A D F F E D F F D A
+A D E D A A D E D A
+A A D D G G D D A A
+A A A E D D E A A A
+
+[DIFFICULTY]
+A = 1
+B = 2

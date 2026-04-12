@@ -1,0 +1,29 @@
+# PIXEL_ART_TEXT v1
+image: Ours.png
+width: 10
+height: 10
+mode: RGBA
+transparent_as_dot: false
+
+[PALETTE]
+A = (255,255,255,255)
+B = (158,83,48,255)
+C = (242,91,21,255)
+D = (16,24,32,255)
+E = (239,186,225,255)
+
+[PIXELS]
+A A A A A A A A A A
+A B B A A A A B B A
+B C C B A A B C C B
+B C B B B B B B C B
+B C B D B B D B C B
+A B B D B B D B B A
+A B E B D D B E B A
+A B B C D C C B B A
+A A B D D D D B A A
+A A A A A A A A A A
+
+[DIFFICULTY]
+A = 3
+C = 1
