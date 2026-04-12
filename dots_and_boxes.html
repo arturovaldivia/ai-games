@@ -791,6 +791,7 @@
       --line-thickness: 6px;
       --line-pad: 4px;
       --box-size: 36px;
+      --box-height: 45px;
       display: grid;
       width: max-content;
       margin: 0 auto;
@@ -891,7 +892,7 @@
 
     .box {
       width: var(--box-size);
-      height: var(--box-size);
+      height: var(--box-height);
       border-radius: 9px;
       align-self: center;
       justify-self: center;
@@ -1386,7 +1387,7 @@
           <label class="pill" for="edge-size">Edge px
             <input id="edge-size" type="number" min="8" max="60" step="1" value="36" aria-label="Edge size in pixels" />
           </label>
-          <input id="zoom" class="visually-hidden" type="range" min="50" max="200" step="5" value="75" aria-label="Board zoom percentage" />
+          <input id="zoom" class="visually-hidden" type="range" min="35" max="250" step="5" value="75" aria-label="Board zoom percentage" />
           <span id="zoom-value" class="visually-hidden">75%</span>
           <label class="pill" for="ai-logic">Agent
             <select id="ai-logic">
@@ -1480,7 +1481,7 @@
             <img src="assets/icecube.png" alt="" class="booster-icon-img" draggable="false" />
             <span id="ice-booster-state" class="booster-state" aria-hidden="true">GO</span>
           </div>
-          <input id="game-zoom" class="visually-hidden" type="range" min="50" max="200" step="5" value="75" aria-label="Board zoom percentage in game" />
+          <input id="game-zoom" class="visually-hidden" type="range" min="35" max="250" step="5" value="75" aria-label="Board zoom percentage in game" />
           <span id="game-zoom-value" class="visually-hidden">75%</span>
         </div>
         <div id="game-board-wrap" class="board-wrap">
@@ -1512,10 +1513,15 @@
     const HUMAN = "human";
     const AI = "ai";
     const ICE_ENERGY_COST = 3;
+    const ZOOM_MIN_PERCENT = 35;
+    const ZOOM_MAX_PERCENT = 250;
+    const ZOOM_STEP_PERCENT = 5;
     const CAMPAIGN_LEVEL_FILES = [
       "levels/Level_1_Cactus.10x10.6c.pixel.txt",
-      "levels/Level_2_Ours.10x10.5c.pixel.txt",
+      "levels/Level_2_pingu_.6x12.3c.pixel.txt",
       "levels/Level_3_Fraise.10x10.7c.pixel.txt",
+      "levels/Level_4_Ours.10x10.5c.pixel.txt",
+      "levels/Level_5_mario.15x25.7x.pixel.txt",
     ];
     const GUARANTEED_LEVEL_ONE_SPEC = {
       fileName: "levels/Level_1_Cactus.10x10.6c.pixel.txt",
@@ -2650,7 +2656,9 @@
     }
 
     function setZoomPercent(nextZoom) {
-      const normalized = Number.isFinite(nextZoom) ? clamp(Math.round(nextZoom / 5) * 5, 50, 200) : 75;
+      const normalized = Number.isFinite(nextZoom)
+        ? clamp(Math.round(nextZoom / ZOOM_STEP_PERCENT) * ZOOM_STEP_PERCENT, ZOOM_MIN_PERCENT, ZOOM_MAX_PERCENT)
+        : 75;
       zoomPercent = normalized;
       if (zoomEl) zoomEl.value = String(normalized);
       if (zoomValueEl) zoomValueEl.textContent = `${normalized}%`;
@@ -2686,7 +2694,7 @@
       const parsedEdge = Number(edgeSizeEl.value);
       const parsedZoom = Number(zoomEl.value);
       edgePx = Number.isFinite(parsedEdge) ? clamp(Math.floor(parsedEdge), 8, 60) : 36;
-      zoomPercent = Number.isFinite(parsedZoom) ? clamp(Math.floor(parsedZoom), 50, 200) : 75;
+      zoomPercent = Number.isFinite(parsedZoom) ? clamp(Math.floor(parsedZoom), ZOOM_MIN_PERCENT, ZOOM_MAX_PERCENT) : 75;
 
       edgeSizeEl.value = String(edgePx);
       zoomEl.value = String(zoomPercent);
@@ -2700,11 +2708,13 @@
       const pad = clamp(Math.round(cell * 0.1), 1, 8);
 
       boardEl.style.gridTemplateColumns = gridColumns();
+      const boxHeight = Math.round(cell * 1.00);
       boardEl.style.setProperty("--cell-size", `${cell}px`);
       boardEl.style.setProperty("--dot-size", `${dot}px`);
       boardEl.style.setProperty("--line-thickness", `${thickness}px`);
       boardEl.style.setProperty("--line-pad", `${pad}px`);
       boardEl.style.setProperty("--box-size", `${cell}px`);
+      boardEl.style.setProperty("--box-height", `${boxHeight}px`);
     }
 
     function isEdgeClaimed(type, row, col) {
