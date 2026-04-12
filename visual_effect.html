@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body {
+    background: #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  .booster {
+    position: relative;
+    padding: 20px 40px;
+    font-size: 18px;
+    color: white;
+    background: #ff9800;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    overflow: hidden;
+
+    /* Glow + pulse */
+    animation: glowPulse 1.5s infinite;
+  }
+
+  @keyframes glowPulse {
+    0% {
+      box-shadow: 0 0 5px rgba(255,165,0,0.4);
+    }
+    50% {
+      box-shadow: 0 0 25px rgba(255,165,0,1);
+    }
+    100% {
+      box-shadow: 0 0 5px rgba(255,165,0,0.4);
+    }
+  }
+
+  /* Shine sweep */
+  .booster::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      120deg,
+      transparent,
+      rgba(255,255,255,0.6),
+      transparent
+    );
+    transform: skewX(-20deg);
+    animation: shine 2s infinite;
+  }
+
+  @keyframes shine {
+    100% {
+      left: 125%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<button class="booster">BOOST</button>
+
+</body>
+</html>

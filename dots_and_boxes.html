@@ -231,6 +231,18 @@
       text-align: right;
     }
 
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     button {
       border: none;
       background: var(--ink);
@@ -317,12 +329,7 @@
     }
 
     .game-hud {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      display: flex;
-      gap: 8px;
-      z-index: 3;
+      display: none;
     }
 
     .game-zoom {
@@ -346,7 +353,10 @@
       z-index: 3;
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-wrap: nowrap;
+      justify-content: center;
+      max-width: calc(100vw - 16px);
     }
 
     .booster-bomb {
@@ -591,7 +601,7 @@
     }
 
     .game-debug {
-      display: inline-flex;
+      display: none;
       align-items: center;
       gap: 8px;
       padding: 7px 10px;
@@ -1078,6 +1088,7 @@
       background: rgba(17, 25, 30, 0.52);
       backdrop-filter: blur(2px);
       padding: 18px;
+      overflow: hidden;
     }
 
     .end-modal.open {
@@ -1094,6 +1105,7 @@
 
     .end-panel {
       width: min(440px, 96%);
+      max-height: calc(100dvh - 36px);
       border-radius: 10px;
       border: 1px solid rgba(37, 50, 56, 0.16);
       background: #fffdf9;
@@ -1104,6 +1116,7 @@
       gap: 14px;
       align-items: start;
       animation: fade-slide 230ms ease both;
+      overflow: hidden;
     }
 
     .end-panel.win {
@@ -1192,6 +1205,52 @@
       }
     }
 
+    @media (max-width: 820px) {
+      body.game-active {
+        height: 100dvh;
+        min-height: 100dvh;
+        padding: 0;
+        display: block;
+        overflow: hidden;
+        background: linear-gradient(150deg, #eef5f2, #f5f0ea);
+      }
+
+      .shell.game-active {
+        width: 100%;
+        height: 100dvh;
+        min-height: 100dvh;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: hidden;
+      }
+
+      .shell.game-active .screen-game {
+        height: 100dvh;
+        min-height: 100dvh;
+        overflow: hidden;
+      }
+
+      .shell.game-active .game-stage {
+        height: 100dvh;
+        min-height: 100dvh;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .shell.game-active .board-wrap {
+        width: 100vw;
+        max-width: 100vw;
+        max-height: calc(100dvh - 84px);
+        padding: 4px;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+        overscroll-behavior: contain;
+      }
+    }
+
     @media (max-width: 620px) {
       .title {
         font-size: 1.1rem;
@@ -1211,14 +1270,41 @@
 
       .end-panel {
         grid-template-columns: 1fr;
+        width: min(100%, 360px);
+        max-height: calc(100dvh - 20px);
+        padding: 12px;
+        gap: 10px;
       }
 
       #end-image {
-        max-width: 140px;
+        max-width: min(38vw, 128px);
+      }
+
+      .end-image-wrap {
+        padding: 6px;
+      }
+
+      .end-copy h3 {
+        margin: 0 0 6px;
+        font-size: 1.05rem;
+      }
+
+      .end-copy p {
+        margin: 0 0 8px;
+        font-size: 0.9rem;
+      }
+
+      .end-actions {
+        gap: 6px;
+      }
+
+      .end-actions button {
+        padding: 9px 12px;
+        font-size: 0.9rem;
       }
 
       .game-hud {
-        top: 10px;
+        bottom: 10px;
         left: 10px;
       }
 
@@ -1228,6 +1314,8 @@
 
       .game-bottom-ui {
         bottom: 10px;
+        gap: 6px;
+        max-width: calc(100vw - 12px);
       }
 
       .game-side-ui {
@@ -1298,10 +1386,8 @@
           <label class="pill" for="edge-size">Edge px
             <input id="edge-size" type="number" min="8" max="60" step="1" value="36" aria-label="Edge size in pixels" />
           </label>
-          <label class="pill" for="zoom">Zoom
-            <input id="zoom" type="range" min="50" max="200" step="5" value="100" aria-label="Board zoom percentage" />
-            <span id="zoom-value" class="zoom-value">100%</span>
-          </label>
+          <input id="zoom" class="visually-hidden" type="range" min="50" max="200" step="5" value="75" aria-label="Board zoom percentage" />
+          <span id="zoom-value" class="visually-hidden">75%</span>
           <label class="pill" for="ai-logic">Agent
             <select id="ai-logic">
               <option value="random" selected>Random but Legal</option>
@@ -1366,13 +1452,7 @@
           <div id="level-transition-text" class="level-transition-card">Loading next level...</div>
         </div>
         <div class="game-hud" aria-label="In-game controls">
-          <button id="game-back" type="button" class="hud-btn secondary hud-icon-btn" aria-label="Back to config" title="Back to config">
-            <img src="assets/backarrow.png" alt="" draggable="false" />
-          </button>
-          <button id="game-config" type="button" class="hud-btn secondary hud-icon-btn" aria-label="Open settings" title="Open settings">
-            <img src="assets/gear.png" alt="" draggable="false" />
-          </button>
-          <button id="game-restart" type="button" class="hud-btn">Restart</button>
+          <button id="game-restart" type="button" class="hud-btn visually-hidden">Restart</button>
         </div>
         <div class="game-side-ui" aria-label="In-game score and zoom">
           <div id="game-debug" class="game-debug" aria-live="polite">booting...</div>
@@ -1381,7 +1461,13 @@
             <div id="game-ai-widget" class="game-score-widget ai"></div>
           </div>
         </div>
-        <div class="game-bottom-ui" aria-label="In-game boosters and zoom">
+        <div class="game-bottom-ui" aria-label="In-game controls and boosters">
+          <button id="game-back" type="button" class="hud-btn secondary hud-icon-btn" aria-label="Back to config" title="Back to config">
+            <img src="assets/backarrow.png" alt="" draggable="false" />
+          </button>
+          <button id="game-config" type="button" class="hud-btn secondary hud-icon-btn" aria-label="Open settings" title="Open settings">
+            <img src="assets/gear.png" alt="" draggable="false" />
+          </button>
           <div id="energy-widget" class="booster-energy" role="status" aria-label="Energy">
             <img src="assets/energy.png" alt="" class="booster-icon-img" draggable="false" />
             <span id="energy-state" class="booster-state" aria-hidden="true">0</span>
@@ -1394,11 +1480,8 @@
             <img src="assets/icecube.png" alt="" class="booster-icon-img" draggable="false" />
             <span id="ice-booster-state" class="booster-state" aria-hidden="true">GO</span>
           </div>
-          <label class="game-zoom" for="game-zoom">
-            Zoom
-            <input id="game-zoom" type="range" min="50" max="200" step="5" value="100" aria-label="Board zoom percentage in game" />
-            <span id="game-zoom-value" class="game-zoom-value">100%</span>
-          </label>
+          <input id="game-zoom" class="visually-hidden" type="range" min="50" max="200" step="5" value="75" aria-label="Board zoom percentage in game" />
+          <span id="game-zoom-value" class="visually-hidden">75%</span>
         </div>
         <div id="game-board-wrap" class="board-wrap">
           <div id="board" class="board" aria-label="Dots and Boxes board"></div>
@@ -1625,8 +1708,11 @@
     let currentPlayer = HUMAN;
     let gameOver = false;
     let edgePx = 36;
-    let zoomPercent = 100;
+    let zoomPercent = 75;
     let autoPlayEnabled = false;
+    let pinchZoomActive = false;
+    let pinchStartDistance = 0;
+    let pinchStartZoom = 75;
     let turnTimerId = null;
     let confettiRaf = null;
     let currentScreen = "intro";
@@ -1701,6 +1787,8 @@
       introScreenEl.classList.toggle("active", name === "intro");
       configScreenEl.classList.toggle("active", name === "config");
       gameScreenEl.classList.toggle("active", name === "game");
+      document.body.classList.toggle("game-active", name === "game");
+      document.querySelector(".shell")?.classList.toggle("game-active", name === "game");
       if (name !== "game" && turnTimerId !== null) {
         window.clearTimeout(turnTimerId);
         turnTimerId = null;
@@ -1732,6 +1820,7 @@
 
     function hideEndModal() {
       endModalEl.classList.remove("open");
+      document.body.classList.remove("modal-open");
       stopConfetti();
     }
 
@@ -1957,11 +2046,12 @@
           const nextLabel = nextLoaded?.label || getCampaignLevelLabel(nextFileName || "Next");
           endTitleEl.textContent = `Level ${orderIndex + 1} Complete!`;
           endMessageEl.textContent = message || `Great job. Next up: Level ${orderIndex + 2} - ${nextLabel || "Next"}.`;
+          stopConfetti();
         } else {
           endTitleEl.textContent = "You Won!";
           endMessageEl.textContent = message || "Great reads and timing. You completed the winning plan.";
+          launchConfetti();
         }
-        launchConfetti();
       } else if (outcome === "ai") {
         endPanelEl.classList.add("lose");
         endTitleEl.textContent = "Agent Won";
@@ -1977,6 +2067,7 @@
       const art = loadedArt || buildCurrentBoardArt();
       renderArtToCanvas(endImageEl, art);
       endModalEl.classList.add("open");
+      document.body.classList.add("modal-open");
     }
 
     function make2D(rows, cols, value = null) {
@@ -2558,6 +2649,20 @@
       return Math.max(min, Math.min(max, value));
     }
 
+    function setZoomPercent(nextZoom) {
+      const normalized = Number.isFinite(nextZoom) ? clamp(Math.round(nextZoom / 5) * 5, 50, 200) : 75;
+      zoomPercent = normalized;
+      if (zoomEl) zoomEl.value = String(normalized);
+      if (zoomValueEl) zoomValueEl.textContent = `${normalized}%`;
+      if (gameZoomEl) gameZoomEl.value = String(normalized);
+      if (gameZoomValueEl) gameZoomValueEl.textContent = `${normalized}%`;
+      applyBoardSizing();
+    }
+
+    function getTouchDistance(touchA, touchB) {
+      return Math.hypot(touchA.clientX - touchB.clientX, touchA.clientY - touchB.clientY);
+    }
+
     function getDisplayCellPx() {
       return clamp(Math.round((edgePx * zoomPercent) / 100), 6, 120);
     }
@@ -2581,7 +2686,7 @@
       const parsedEdge = Number(edgeSizeEl.value);
       const parsedZoom = Number(zoomEl.value);
       edgePx = Number.isFinite(parsedEdge) ? clamp(Math.floor(parsedEdge), 8, 60) : 36;
-      zoomPercent = Number.isFinite(parsedZoom) ? clamp(Math.floor(parsedZoom), 50, 200) : 100;
+      zoomPercent = Number.isFinite(parsedZoom) ? clamp(Math.floor(parsedZoom), 50, 200) : 75;
 
       edgeSizeEl.value = String(edgePx);
       zoomEl.value = String(zoomPercent);
@@ -3497,7 +3602,7 @@
     });
     gameBackEl.addEventListener("click", () => showScreen("config"));
     gameConfigEl.addEventListener("click", () => showScreen("config"));
-    gameRestartEl.addEventListener("click", () => newGame());
+    if (gameRestartEl) gameRestartEl.addEventListener("click", () => newGame());
     bombBoosterEl.addEventListener("dragstart", (event) => {
       if (!isBombAvailable()) {
         event.preventDefault();
@@ -3520,6 +3625,30 @@
       if (!target) return;
       applyBombReveal(target.row, target.col);
     });
+    gameBoardWrapEl.addEventListener("touchstart", (event) => {
+      if (currentScreen !== "game" || event.touches.length !== 2) return;
+      pinchZoomActive = true;
+      pinchStartDistance = getTouchDistance(event.touches[0], event.touches[1]);
+      pinchStartZoom = zoomPercent;
+    }, { passive: true });
+    gameBoardWrapEl.addEventListener("touchmove", (event) => {
+      if (currentScreen !== "game" || !pinchZoomActive || event.touches.length !== 2) return;
+      const nextDistance = getTouchDistance(event.touches[0], event.touches[1]);
+      if (!Number.isFinite(nextDistance) || pinchStartDistance <= 0) return;
+      event.preventDefault();
+      const scale = nextDistance / pinchStartDistance;
+      setZoomPercent(pinchStartZoom * scale);
+    }, { passive: false });
+    gameBoardWrapEl.addEventListener("touchend", (event) => {
+      if (event.touches.length < 2) {
+        pinchZoomActive = false;
+        pinchStartDistance = 0;
+      }
+    }, { passive: true });
+    gameBoardWrapEl.addEventListener("touchcancel", () => {
+      pinchZoomActive = false;
+      pinchStartDistance = 0;
+    }, { passive: true });
     // ── Touch drag for bomb (HTML5 drag API not supported on iOS/iPadOS) ──
     bombBoosterEl.addEventListener("touchstart", (event) => {
       if (!isBombAvailable()) return;
