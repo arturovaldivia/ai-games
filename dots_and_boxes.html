@@ -391,7 +391,25 @@
     }
 
     .booster-ice.ready {
-      animation: ice-pulse 1.5s ease-in-out infinite;
+      animation: ice-pulse 1.5s ease-in-out infinite, booster-glow 1.7s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .booster-ice.ready::before,
+    .booster-bomb.ready::before {
+      content: "";
+      position: absolute;
+      top: -15%;
+      left: -85%;
+      width: 58%;
+      height: 130%;
+      background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.62), transparent);
+      transform: skewX(-20deg);
+      pointer-events: none;
+      z-index: 1;
+      animation: booster-shine 2.2s ease-in-out infinite;
     }
 
     .booster-energy {
@@ -462,7 +480,10 @@
       cursor: grab;
       border-color: rgba(255, 255, 255, 0.5);
       box-shadow: 0 10px 24px rgba(185, 105, 16, 0.34);
-      animation: bomb-pop 1.3s ease-in-out infinite;
+      animation: bomb-pop 1.3s ease-in-out infinite, booster-glow 1.7s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
     }
 
     .booster-bomb.ready .booster-icon-img {
@@ -514,6 +535,48 @@
       }
       50% {
         transform: translateY(-1px) scale(1.02);
+      }
+    }
+
+    @keyframes booster-glow {
+      0%,
+      100% {
+        filter: brightness(1);
+        box-shadow: 0 8px 18px rgba(37, 50, 56, 0.2);
+      }
+      50% {
+        filter: brightness(1.08);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.24), 0 0 24px rgba(255, 198, 92, 0.55), 0 10px 24px rgba(37, 50, 56, 0.24);
+      }
+    }
+
+    @keyframes booster-shine {
+      0% {
+        left: -85%;
+      }
+      60%,
+      100% {
+        left: 140%;
+      }
+    }
+
+    @keyframes objective-box-glow {
+      0%,
+      100% {
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.42), 0 0 8px rgba(255, 220, 128, 0.38);
+      }
+      50% {
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.62), 0 0 18px rgba(255, 220, 128, 0.82);
+      }
+    }
+
+    @keyframes objective-box-shine {
+      0% {
+        left: -85%;
+      }
+      60%,
+      100% {
+        left: 140%;
       }
     }
 
@@ -822,9 +885,29 @@
       border-radius: 9px;
       align-self: center;
       justify-self: center;
+      position: relative;
+      overflow: hidden;
       background: rgba(37, 50, 56, 0.03);
       border: 1px solid rgba(37, 50, 56, 0.08);
       transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .box.objective-complete {
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 0 16px rgba(255, 220, 128, 0.72);
+      animation: objective-box-glow 1.8s ease-in-out infinite;
+    }
+
+    .box.objective-complete::after {
+      content: "";
+      position: absolute;
+      top: -20%;
+      left: -85%;
+      width: 52%;
+      height: 140%;
+      background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.52), transparent);
+      transform: skewX(-22deg);
+      pointer-events: none;
+      animation: objective-box-shine 2.4s ease-in-out infinite;
     }
 
     .box.human {
@@ -1935,10 +2018,12 @@
       iceBoosterStateEl.classList.remove("cost");
       if (canUseIceBooster()) {
         iceBoosterEl.classList.add("ready");
-        iceBoosterStateEl.textContent = "GO";
+        iceBoosterStateEl.textContent = "";
+        iceBoosterStateEl.style.display = "none";
         iceBoosterEl.setAttribute("aria-label", `Ice cube ready. Costs ${ICE_ENERGY_COST} energy and freezes the agent for 2 turns.`);
         iceBoosterEl.title = `Ice cube ready. Costs ${ICE_ENERGY_COST} energy and freezes the agent for 2 turns.`;
       } else {
+        iceBoosterStateEl.style.display = "inline-flex";
         iceBoosterStateEl.textContent = `${ICE_ENERGY_COST}`;
         iceBoosterStateEl.classList.add("cost");
         const shown = Math.min(ICE_ENERGY_COST, energyPoints);
@@ -1972,11 +2057,13 @@
 
       if (available) {
         bombBoosterEl.classList.add("ready");
-        bombBoosterStateEl.textContent = "GO";
+        bombBoosterStateEl.textContent = "";
+        bombBoosterStateEl.style.display = "none";
         bombBoosterEl.setAttribute("aria-label", `Bomb ready. Costs ${needed} energy. Drag to reveal a 3 by 3 area.`);
         bombBoosterEl.title = `Bomb ready. Costs ${needed} energy. Drag to reveal a 3 by 3 area.`;
         bombBoosterEl.draggable = true;
       } else {
+        bombBoosterStateEl.style.display = "inline-flex";
         bombBoosterStateEl.textContent = `${needed}`;
         bombBoosterStateEl.classList.add("cost");
         bombBoosterEl.setAttribute("aria-label", `Bomb unavailable. Need ${needed} energy, current ${energyPoints}.`);
@@ -3154,11 +3241,15 @@
       for (const boxEl of boardEl.querySelectorAll(".box")) {
         const row = Number(boxEl.dataset.row);
         const col = Number(boxEl.dataset.col);
-        boxEl.classList.remove("human", "ai", "revealed", "info-revealed");
+        boxEl.classList.remove("human", "ai", "revealed", "info-revealed", "objective-complete");
         const owner = boxes[row][col];
         if (owner) {
           boxEl.classList.add(owner, "revealed");
           boxEl.style.background = hiddenBoxColors[row]?.[col] || "rgba(220, 220, 220, 0.9)";
+          const token = hiddenBoxTokens[row]?.[col] || "_";
+          if ((objectiveTargets[token] || 0) > 0) {
+            boxEl.classList.add("objective-complete");
+          }
         } else {
           const informed = infoRevealMask[row]?.[col] === true;
           if (informed) {
@@ -3377,15 +3468,13 @@
         if (next) {
           showScreen("game");
           setStatus(`Loading Level ${orderIndex + 2}: ${next.label}...`);
-          if (orderIndex + 1 === 1) {
-            startLevelCountdown(nextIndex + 1, next.label, () => {
-              if (!loadCampaignLevelByFileName(nextFileName, { announce: true })) {
-                setStatus("Could not load next level. Please restart campaign.");
-                newGame();
-              }
-            });
-            return;
-          }
+          startLevelCountdown(orderIndex + 2, next.label, () => {
+            if (!loadCampaignLevelByFileName(nextFileName, { announce: true })) {
+              setStatus("Could not load next level. Please restart campaign.");
+              newGame();
+            }
+          });
+          return;
         }
         if (!loadCampaignLevelByFileName(nextFileName, { announce: true })) {
           setStatus("Could not load next level. Please restart campaign.");
