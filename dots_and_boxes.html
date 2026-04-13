@@ -1888,6 +1888,7 @@
     let gestureStartBox = null;
     let gesturePreviewEdge = null;
     let gestureMode = "idle";
+    let gestureDragInProgress = false;
     let suppressEdgeClickUntil = 0;
     if (gestureTraceCanvasEl) {
       const resizeGestureTraceCanvas = () => {
@@ -3926,6 +3927,7 @@
       closePrecisionEdgePicker();
       clearGesturePreview();
       gestureTouchActive = false;
+      gestureDragInProgress = false;
       gestureStartBox = null;
       gestureMode = "idle";
       setupState(rows, cols);
@@ -4059,29 +4061,39 @@
       const startBox = findClosestBoxFromTouchStart(touch.clientX, touch.clientY);
       if (!startBox) return;
 
-      event.preventDefault();
-      suppressEdgeClickUntil = Date.now() + 650;
       gestureTouchActive = true;
+      gestureDragInProgress = false;
       gestureStartX = touch.clientX;
       gestureStartY = touch.clientY;
       gestureStartBox = startBox;
       gestureMode = "gesture";
       clearGesturePreview();
-      showGestureTrace(touch.clientX, touch.clientY, touch.clientX, touch.clientY);
+      hideGestureTrace(true);
     }, { passive: false });
     boardEl.addEventListener("touchmove", (event) => {
       if (!gestureTouchActive || !gestureStartBox || event.touches.length !== 1) return;
       if (gestureMode === "precision") return;
-      event.preventDefault();
 
       const touch = event.touches[0];
       const dx = touch.clientX - gestureStartX;
       const dy = touch.clientY - gestureStartY;
       const moveDistance = Math.hypot(dx, dy);
 
-      updateGestureTraceTip(touch.clientX, touch.clientY);
+      if (moveDistance >= 1) {
+        if (gestureTraceCanvasEl?.hidden !== false) {
+          showGestureTrace(gestureStartX, gestureStartY, touch.clientX, touch.clientY);
+        } else {
+          updateGestureTraceTip(touch.clientX, touch.clientY);
+        }
+      }
 
       if (moveDistance < GESTURE_MOVE_THRESHOLD_PX) return;
+
+      event.preventDefault();
+      if (!gestureDragInProgress) {
+        gestureDragInProgress = true;
+        suppressEdgeClickUntil = Date.now() + 650;
+      }
 
       const nextEdge = resolveGestureEdge(gestureStartBox, dx, dy);
       if (!nextEdge) {
@@ -4095,6 +4107,16 @@
     }, { passive: false });
     boardEl.addEventListener("touchend", (event) => {
       if (!gestureTouchActive) return;
+
+      if (!gestureDragInProgress) {
+        gestureTouchActive = false;
+        gestureStartBox = null;
+        gestureMode = "idle";
+        clearGesturePreview();
+        hideGestureTrace(true);
+        return;
+      }
+
       if (gestureMode !== "precision") {
         event.preventDefault();
       }
@@ -4112,10 +4134,12 @@
       }
       hideGestureTrace();
       gestureTouchActive = false;
+      gestureDragInProgress = false;
       gestureStartBox = null;
     }, { passive: false });
     boardEl.addEventListener("touchcancel", () => {
       gestureTouchActive = false;
+      gestureDragInProgress = false;
       gestureStartBox = null;
       if (gestureMode !== "precision") {
         gestureMode = "idle";
