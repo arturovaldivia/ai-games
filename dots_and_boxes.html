@@ -359,6 +359,19 @@
       max-width: calc(100vw - 16px);
     }
 
+    .booster-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(20, 26, 32, 0.52);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 8px 24px rgba(17, 25, 30, 0.28);
+    }
+
     .booster-bomb {
       width: 56px;
       height: 56px;
@@ -593,11 +606,14 @@
     .game-side-ui {
       position: absolute;
       top: 12px;
-      right: 12px;
+      left: 50%;
       z-index: 3;
       display: grid;
       gap: 6px;
-      justify-items: end;
+      justify-items: center;
+      width: 100vw;
+      transform: translateX(-50%);
+      transform-origin: top center;
     }
 
     .game-debug {
@@ -618,51 +634,222 @@
     }
 
     .game-score {
-      display: inline-flex;
-      align-items: center;
-      flex-wrap: nowrap;
-      gap: 6px;
-      max-width: min(86vw, 860px);
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding-bottom: 2px;
-      scrollbar-width: thin;
+      display: grid;
+      grid-template-columns: 43vw 8vw 43vw;
+      align-items: end;
+      column-gap: 0;
+      padding-top: 0;
+      width: 94vw;
+      overflow: visible;
     }
 
-    .game-score::-webkit-scrollbar {
-      height: 6px;
+    .game-score > .game-score-widget:first-of-type {
+      justify-self: stretch;
     }
 
-    .game-score::-webkit-scrollbar-thumb {
-      background: rgba(37, 50, 56, 0.28);
-      border-radius: 999px;
+    .game-score > .game-score-widget:last-of-type {
+      justify-self: stretch;
+    }
+
+    .game-score > .game-score-widget {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .score-vs-sep {
+      justify-self: center;
+      align-self: center;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: rgba(255, 255, 255, 0.6);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      padding: 0 2px;
+      flex: 0 0 auto;
+      position: relative;
+      z-index: 8;
     }
 
     .game-score-widget {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 5px;
-      border-radius: 999px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 18px;
       border: 1px solid rgba(255, 255, 255, 0.42);
       box-shadow: 0 10px 22px rgba(39, 19, 89, 0.35);
       color: #fff;
-      min-height: 34px;
       flex: 0 0 auto;
       position: relative;
-      overflow: hidden;
+      isolation: isolate;
+      overflow: visible;
+      min-width: 134px;
+      padding-top: 0;
+    }
+
+    .widget-portrait {
+      position: absolute;
+      left: -16px;
+      top: 0;
+      width: 58px;
+      height: 100%;
+      z-index: 6;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 10px rgba(16, 20, 26, 0.28));
+      transform: none;
+    }
+
+    #game-ai-widget .widget-portrait {
+      left: auto;
+      right: -16px;
+    }
+
+    .widget-avatar-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      transform: scale(1.2);
+      transform-origin: center bottom;
+      display: block;
+    }
+
+    .widget-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 8px 12px 6px;
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 18px 18px 0 0;
+      position: relative;
+      z-index: 4;
+      text-align: center;
+    }
+
+    .widget-name {
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      opacity: 0.95;
+      white-space: nowrap;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+    }
+
+    .widget-body {
+      padding: 6px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      z-index: 4;
+    }
+
+    .widget-score {
+      font-size: 1.55rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .widget-mode-caption {
+      margin: 0;
+      font-size: 0.57rem;
+      letter-spacing: 0.1em;
+      font-weight: 800;
+      text-transform: uppercase;
+      opacity: 0.86;
+    }
+
+    .widget-goals {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+      overflow: visible;
+      padding-top: 6px;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    #game-human-widget .widget-goals {
+      justify-content: flex-end;
+      padding-left: 12px;
+    }
+
+    #game-ai-widget .widget-goals {
+      justify-content: flex-start;
+    }
+
+    .widget-goals::-webkit-scrollbar {
+      display: none;
+    }
+
+    .goal-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      background: rgba(255, 255, 255, 0.24);
+      display: grid;
+      place-items: center;
+      position: relative;
+      flex: 0 0 auto;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+    }
+
+    .goal-cell {
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      border: 1px solid rgba(15, 26, 34, 0.22);
+      background: var(--goal-color, rgba(255, 255, 255, 0.66));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    .goal-left {
+      position: absolute;
+      right: -7px;
+      top: -5px;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      padding: 0 5px;
+      background: rgba(17, 26, 34, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.48);
+      color: #f7fbff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.66rem;
+      font-weight: 800;
+      line-height: 1;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+      z-index: 5;
+    }
+
+    .goal-badge.done .goal-left {
+      background: rgba(20, 82, 59, 0.95);
+      color: #dcffeb;
+    }
+
+    .widget-empty-goals {
+      font-size: 0.67rem;
+      opacity: 0.86;
+      white-space: nowrap;
     }
 
     .game-score-widget.human {
-      background: linear-gradient(135deg, rgba(11, 106, 98, 0.95), rgba(34, 143, 132, 0.95));
+      background: linear-gradient(150deg, rgba(11, 106, 98, 0.95), rgba(34, 143, 132, 0.95));
     }
 
     .game-score-widget.ai {
-      background: linear-gradient(135deg, rgba(163, 48, 33, 0.95), rgba(201, 80, 60, 0.95));
+      background: linear-gradient(150deg, rgba(163, 48, 33, 0.95), rgba(201, 80, 60, 0.95));
     }
 
     .game-score-widget.ai.frozen {
-      background: linear-gradient(135deg, rgba(98, 67, 67, 0.95), rgba(126, 88, 88, 0.95));
+      background: linear-gradient(150deg, rgba(98, 67, 67, 0.95), rgba(126, 88, 88, 0.95));
       border-color: rgba(214, 240, 255, 0.8);
       box-shadow: 0 10px 24px rgba(93, 73, 73, 0.36);
     }
@@ -670,16 +857,15 @@
     .game-score-widget.ai.frozen::after {
       content: "";
       position: absolute;
-      width: 34px;
-      height: 34px;
-      right: 4px;
-      top: 50%;
-      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      right: 8px;
+      top: 8px;
       background-image: url("assets/red_icecubes.png");
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
-      opacity: 0.98;
+      opacity: 0.95;
       filter: drop-shadow(0 2px 4px rgba(40, 16, 16, 0.55));
       pointer-events: none;
       z-index: 2;
@@ -688,32 +874,15 @@
     .score-seg {
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.2);
-      padding: 4px 8px;
-      font-size: 0.75rem;
+      padding: 3px 7px;
+      font-size: 0.7rem;
       font-weight: 700;
       letter-spacing: 0.01em;
       line-height: 1;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       white-space: nowrap;
-    }
-
-    .score-seg .target {
-      opacity: 0.86;
-      font-weight: 600;
-    }
-
-    .score-seg.total {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    .score-seg .mini-chip {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      display: inline-block;
     }
 
     .game-zoom input[type="range"] {
@@ -760,18 +929,61 @@
     }
 
     .board-wrap {
-      background: #fff;
-      border: 1px solid rgba(37, 50, 56, 0.1);
+      position: relative;
+      isolation: isolate;
+      background: linear-gradient(160deg, rgba(178, 227, 221, 0.96), rgba(202, 235, 230, 0.95));
+      border: 2px solid rgba(129, 206, 197, 0.95);
       border-radius: var(--radius);
-      padding: 18px;
+      padding: 12px;
       overflow: auto;
       max-width: 100%;
       max-height: calc(100vh - 42px);
+      box-shadow:
+        0 8px 20px rgba(37, 50, 56, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.84),
+        inset 0 0 0 2px rgba(228, 248, 245, 0.72);
+    }
+
+    .board-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 14% 18%, rgba(255, 255, 255, 0.5), transparent 36%),
+        radial-gradient(circle at 84% 82%, rgba(255, 255, 255, 0.35), transparent 38%),
+        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0 2px, rgba(0, 0, 0, 0) 2px 8px);
+      opacity: 0.58;
+    }
+
+    .board-wrap::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: calc(var(--radius) - 4px);
+      pointer-events: none;
+      z-index: 0;
+      background:
+        linear-gradient(140deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 40%),
+        linear-gradient(325deg, rgba(113, 193, 184, 0.22), rgba(255, 255, 255, 0) 48%);
+      opacity: 0.75;
+    }
+
+    .board-wrap > * {
+      position: relative;
+      z-index: 1;
     }
 
     .screen-game .board-wrap {
+      background: linear-gradient(160deg, rgba(173, 223, 217, 0.97), rgba(201, 234, 228, 0.95));
       border-radius: 22px;
-      box-shadow: 0 14px 30px rgba(37, 50, 56, 0.16);
+      border: 2px solid rgba(122, 202, 192, 0.95);
+      box-shadow:
+        0 8px 18px rgba(37, 50, 56, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.86),
+        inset 0 0 0 2px rgba(224, 246, 243, 0.74);
     }
 
     .rotate-hint {
@@ -881,6 +1093,11 @@
       display: grid;
       width: max-content;
       margin: 0 auto;
+      padding: 6px;
+      border-radius: 16px;
+      border: 1px solid rgba(101, 126, 128, 0.22);
+      background: rgba(244, 247, 247, 0.96);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
       animation: fade-slide 360ms ease both;
       touch-action: none;
     }
@@ -1357,11 +1574,11 @@
         width: 100vw;
         max-width: 100vw;
         max-height: calc(100dvh - 84px);
-        padding: 4px;
-        border: none;
-        border-radius: 0;
-        box-shadow: none;
-        background: transparent;
+        padding: 9px;
+        border: 2px solid rgba(122, 202, 192, 0.92);
+        border-radius: 16px;
+        box-shadow: 0 8px 16px rgba(37, 50, 56, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.82), inset 0 0 0 2px rgba(224, 246, 243, 0.7);
+        background: linear-gradient(160deg, rgba(176, 223, 217, 0.97), rgba(201, 233, 228, 0.95));
         overscroll-behavior: contain;
       }
     }
@@ -1381,6 +1598,11 @@
 
       .board-wrap {
         padding: 12px;
+      }
+
+      .board {
+        padding: 5px;
+        border-radius: 14px;
       }
 
       .end-panel {
@@ -1435,20 +1657,58 @@
 
       .game-side-ui {
         top: 10px;
-        right: 10px;
+        left: 50%;
+        width: 100vw;
       }
 
       .game-zoom input[type="range"] {
         width: 96px;
       }
 
-      .game-score-widget {
-        min-height: 32px;
+      .game-score {
+        grid-template-columns: 43vw 8vw 43vw;
+        width: 94vw;
       }
 
-      .score-seg {
-        font-size: 0.73rem;
-        padding: 4px 7px;
+      .widget-portrait {
+        width: 46px;
+        height: 100%;
+        top: 0;
+        left: -12px;
+      }
+
+      #game-ai-widget .widget-portrait {
+        left: auto;
+        right: -12px;
+      }
+
+      .widget-score {
+        font-size: 1.25rem;
+      }
+
+      .widget-header {
+        min-height: 32px;
+        padding: 6px 9px 5px;
+      }
+
+      .widget-body {
+        padding: 5px 9px 8px;
+      }
+
+      .goal-badge {
+        width: 30px;
+        height: 30px;
+      }
+
+      .goal-cell {
+        width: 19px;
+        height: 19px;
+      }
+
+      .goal-left {
+        min-width: 15px;
+        height: 15px;
+        font-size: 0.58rem;
       }
 
       .hud-btn {
@@ -1573,6 +1833,7 @@
           <div id="game-debug" class="game-debug" aria-live="polite">booting...</div>
           <div class="game-score" aria-live="polite">
             <div id="game-human-widget" class="game-score-widget human"></div>
+            <div class="score-vs-sep">VS</div>
             <div id="game-ai-widget" class="game-score-widget ai"></div>
           </div>
         </div>
@@ -1587,13 +1848,15 @@
             <img src="assets/energy.png" alt="" class="booster-icon-img" draggable="false" />
             <span id="energy-state" class="booster-state" aria-hidden="true">0</span>
           </div>
-          <div id="bomb-booster" class="booster-bomb" draggable="false" role="button" tabindex="0" aria-label="Bomb locked. Complete 2 boxes to unlock." title="Bomb locked. Complete 2 boxes to unlock.">
-            <img src="assets/flashlight.png" alt="" class="booster-icon-img" draggable="false" />
-            <span id="bomb-booster-state" class="booster-state" aria-hidden="true">0/2</span>
-          </div>
-          <div id="ice-booster" class="booster-ice ready" role="button" tabindex="0" aria-label="Ice cube ready. Use to freeze the agent for 2 turns." title="Ice cube ready. Use to freeze the agent for 2 turns.">
-            <img src="assets/icecube.png" alt="" class="booster-icon-img" draggable="false" />
-            <span id="ice-booster-state" class="booster-state" aria-hidden="true">GO</span>
+          <div class="booster-bar">
+            <div id="bomb-booster" class="booster-bomb" draggable="false" role="button" tabindex="0" aria-label="Bomb locked. Complete 2 boxes to unlock." title="Bomb locked. Complete 2 boxes to unlock.">
+              <img src="assets/flashlight.png" alt="" class="booster-icon-img" draggable="false" />
+              <span id="bomb-booster-state" class="booster-state" aria-hidden="true">0/2</span>
+            </div>
+            <div id="ice-booster" class="booster-ice ready" role="button" tabindex="0" aria-label="Ice cube ready. Use to freeze the agent for 2 turns." title="Ice cube ready. Use to freeze the agent for 2 turns.">
+              <img src="assets/icecube.png" alt="" class="booster-icon-img" draggable="false" />
+              <span id="ice-booster-state" class="booster-state" aria-hidden="true">GO</span>
+            </div>
           </div>
           <input id="game-zoom" class="visually-hidden" type="range" min="35" max="250" step="5" value="75" aria-label="Board zoom percentage in game" />
           <span id="game-zoom-value" class="visually-hidden">75%</span>
@@ -1858,10 +2121,15 @@
     let gameOver = false;
     let edgePx = 36;
     let zoomPercent = 75;
+    let zoomPercentX = 75;
+    let zoomPercentY = 75;
     let autoPlayEnabled = false;
     let pinchZoomActive = false;
-    let pinchStartDistance = 0;
-    let pinchStartZoom = 75;
+    let pinchStartSpanX = 0;
+    let pinchStartSpanY = 0;
+    let pinchStartZoomX = 75;
+    let pinchStartZoomY = 75;
+    let pinchAxis = null;
     let turnTimerId = null;
     let confettiRaf = null;
     let currentScreen = "intro";
@@ -1900,6 +2168,8 @@
     let endPrimaryAction = "restart";
     const GESTURE_MOVE_THRESHOLD_PX = 12;
     const GESTURE_DOMINANCE_RATIO = 1.5;
+    const PINCH_AXIS_DETECTION_THRESHOLD_PX = 6;
+    const PINCH_AXIS_DOMINANCE_RATIO = 1.2;
 
     function showLevelTransition(message, duration = 900) {
       if (!levelTransitionEl || !levelTransitionTextEl) return;
@@ -3135,24 +3405,50 @@
       return Math.max(min, Math.min(max, value));
     }
 
-    function setZoomPercent(nextZoom) {
-      const normalized = Number.isFinite(nextZoom)
+    function normalizeZoomPercent(nextZoom) {
+      return Number.isFinite(nextZoom)
         ? clamp(Math.round(nextZoom / ZOOM_STEP_PERCENT) * ZOOM_STEP_PERCENT, ZOOM_MIN_PERCENT, ZOOM_MAX_PERCENT)
         : 75;
-      zoomPercent = normalized;
-      if (zoomEl) zoomEl.value = String(normalized);
-      if (zoomValueEl) zoomValueEl.textContent = `${normalized}%`;
-      if (gameZoomEl) gameZoomEl.value = String(normalized);
-      if (gameZoomValueEl) gameZoomValueEl.textContent = `${normalized}%`;
+    }
+
+    function getZoomLabelText() {
+      return zoomPercentX === zoomPercentY ? `${zoomPercentX}%` : `${zoomPercentX}%/${zoomPercentY}%`;
+    }
+
+    function syncZoomControlsFromState() {
+      zoomPercent = Math.round((zoomPercentX + zoomPercentY) / 2);
+      const controlZoom = String(zoomPercent);
+      const label = getZoomLabelText();
+      if (zoomEl) zoomEl.value = controlZoom;
+      if (zoomValueEl) zoomValueEl.textContent = label;
+      if (gameZoomEl) gameZoomEl.value = controlZoom;
+      if (gameZoomValueEl) gameZoomValueEl.textContent = label;
+    }
+
+    function setZoomPercents(nextZoomX, nextZoomY) {
+      zoomPercentX = normalizeZoomPercent(nextZoomX);
+      zoomPercentY = normalizeZoomPercent(nextZoomY);
       applyBoardSizing();
     }
 
-    function getTouchDistance(touchA, touchB) {
-      return Math.hypot(touchA.clientX - touchB.clientX, touchA.clientY - touchB.clientY);
+    function setZoomPercent(nextZoom) {
+      const normalized = normalizeZoomPercent(nextZoom);
+      setZoomPercents(normalized, normalized);
     }
 
-    function getDisplayCellPx() {
-      return clamp(Math.round((edgePx * zoomPercent) / 100), 6, 120);
+    function getTouchSpan(touchA, touchB) {
+      return {
+        x: Math.abs(touchA.clientX - touchB.clientX),
+        y: Math.abs(touchA.clientY - touchB.clientY),
+      };
+    }
+
+    function getDisplayCellPxX() {
+      return clamp(Math.round((edgePx * zoomPercentX) / 100), 6, 120);
+    }
+
+    function getDisplayCellPxY() {
+      return clamp(Math.round((edgePx * zoomPercentY) / 100), 6, 120);
     }
 
     function setAutoPlayEnabled(enabled) {
@@ -3167,33 +3463,37 @@
     }
 
     function gridColumns() {
-      return `repeat(${dotsCols * 2 - 1}, ${getDisplayCellPx()}px)`;
+      return `repeat(${dotsCols * 2 - 1}, ${getDisplayCellPxX()}px)`;
+    }
+
+    function gridRows() {
+      return `repeat(${dotsRows * 2 - 1}, ${getDisplayCellPxY()}px)`;
     }
 
     function applyBoardSizing() {
       const parsedEdge = Number(edgeSizeEl.value);
-      const parsedZoom = Number(zoomEl.value);
       edgePx = Number.isFinite(parsedEdge) ? clamp(Math.floor(parsedEdge), 8, 60) : 36;
-      zoomPercent = Number.isFinite(parsedZoom) ? clamp(Math.floor(parsedZoom), ZOOM_MIN_PERCENT, ZOOM_MAX_PERCENT) : 75;
+      zoomPercentX = normalizeZoomPercent(zoomPercentX);
+      zoomPercentY = normalizeZoomPercent(zoomPercentY);
 
       edgeSizeEl.value = String(edgePx);
-      zoomEl.value = String(zoomPercent);
-      zoomValueEl.textContent = `${zoomPercent}%`;
-      if (gameZoomEl) gameZoomEl.value = String(zoomPercent);
-      if (gameZoomValueEl) gameZoomValueEl.textContent = `${zoomPercent}%`;
+      syncZoomControlsFromState();
 
-      const cell = getDisplayCellPx();
-      const dot = clamp(Math.round(cell * 0.33), 4, 18);
-      const thickness = clamp(Math.round(cell * 0.16), 2, 12);
-      const pad = clamp(Math.round(cell * 0.1), 1, 8);
+      const cellX = getDisplayCellPxX();
+      const cellY = getDisplayCellPxY();
+      const baseCell = Math.min(cellX, cellY);
+      const dot = clamp(Math.round(baseCell * 0.33), 4, 18);
+      const thickness = clamp(Math.round(baseCell * 0.16), 2, 12);
+      const pad = clamp(Math.round(baseCell * 0.1), 1, 8);
 
       boardEl.style.gridTemplateColumns = gridColumns();
-      const boxHeight = Math.round(cell * 1.00);
-      boardEl.style.setProperty("--cell-size", `${cell}px`);
+      boardEl.style.gridTemplateRows = gridRows();
+      const boxHeight = Math.round(cellY * 1.00);
+      boardEl.style.setProperty("--cell-size", `${baseCell}px`);
       boardEl.style.setProperty("--dot-size", `${dot}px`);
       boardEl.style.setProperty("--line-thickness", `${thickness}px`);
       boardEl.style.setProperty("--line-pad", `${pad}px`);
-      boardEl.style.setProperty("--box-size", `${cell}px`);
+      boardEl.style.setProperty("--box-size", `${cellX}px`);
       boardEl.style.setProperty("--box-height", `${boxHeight}px`);
     }
 
@@ -3802,16 +4102,36 @@
 
     function renderGameScoreWidget(container, player, label) {
       const total = scoreOf(player);
-      const tokens = gameModeEl.value === "objective" ? getActiveObjectiveTokens() : [];
+      const inObjectiveMode = gameModeEl.value === "objective";
+      const tokens = inObjectiveMode ? getActiveObjectiveTokens() : [];
       const counts = tokens.length > 0 ? countCapturedTokensByPlayer(player) : {};
 
-      const segments = [`<span class="score-seg total"><strong>${label}</strong> ${total}</span>`];
-      for (const token of tokens) {
-        const tokenColor = loadedArt?.palette?.[token] || "rgba(255,255,255,0.7)";
-        const target = objectiveTargets[token] || 0;
-        segments.push(`<span class="score-seg objective"><span class="mini-chip" style="background:${tokenColor}"></span>${counts[token] || 0}<span class="target">/${target}</span></span>`);
+      const avatarSrc = player === HUMAN ? "assets/player.png" : "assets/agent.png";
+      let bodyHtml = `<strong class="widget-score">${total}</strong>`;
+
+      if (inObjectiveMode) {
+        let goalsHtml = "";
+        for (const token of tokens) {
+          const tokenColor = loadedArt?.palette?.[token] || "rgba(255,255,255,0.7)";
+          const target = objectiveTargets[token] || 0;
+          const captured = counts[token] || 0;
+          const remaining = Math.max(0, target - captured);
+          const leftLabel = remaining === 0 ? "✓" : String(remaining);
+          const doneClass = remaining === 0 ? " done" : "";
+          goalsHtml += `<span class="goal-badge${doneClass}" style="--goal-color:${tokenColor}" title="${token}: ${remaining} left"><span class="goal-cell"></span><span class="goal-left">${leftLabel}</span></span>`;
+        }
+        bodyHtml = `
+          <div class="widget-goals">${goalsHtml || '<span class="widget-empty-goals">No goals</span>'}</div>`;
       }
-      container.innerHTML = segments.join("");
+
+      container.innerHTML = `
+        <div class="widget-portrait"><img src="${avatarSrc}" alt="" class="widget-avatar-image" draggable="false" /></div>
+        <div class="widget-header">
+          <span class="widget-name">${label}</span>
+        </div>
+        <div class="widget-body">
+          ${bodyHtml}
+        </div>`;
     }
 
     function refreshBoardUI() {
@@ -4047,15 +4367,13 @@
     colsEl.addEventListener("change", newGame);
     edgeSizeEl.addEventListener("change", applyBoardSizing);
     edgeSizeEl.addEventListener("input", applyBoardSizing);
-    zoomEl.addEventListener("input", applyBoardSizing);
-    zoomEl.addEventListener("change", applyBoardSizing);
+    zoomEl.addEventListener("input", () => setZoomPercent(Number(zoomEl.value)));
+    zoomEl.addEventListener("change", () => setZoomPercent(Number(zoomEl.value)));
     gameZoomEl.addEventListener("input", () => {
-      zoomEl.value = gameZoomEl.value;
-      applyBoardSizing();
+      setZoomPercent(Number(gameZoomEl.value));
     });
     gameZoomEl.addEventListener("change", () => {
-      zoomEl.value = gameZoomEl.value;
-      applyBoardSizing();
+      setZoomPercent(Number(gameZoomEl.value));
     });
     aiLogicEl.addEventListener("change", updateHintForAiLogic);
     gameModeEl.addEventListener("change", () => {
@@ -4135,26 +4453,53 @@
     gameBoardWrapEl.addEventListener("touchstart", (event) => {
       if (currentScreen !== "game" || event.touches.length !== 2) return;
       pinchZoomActive = true;
-      pinchStartDistance = getTouchDistance(event.touches[0], event.touches[1]);
-      pinchStartZoom = zoomPercent;
+      const span = getTouchSpan(event.touches[0], event.touches[1]);
+      pinchStartSpanX = span.x;
+      pinchStartSpanY = span.y;
+      pinchStartZoomX = zoomPercentX;
+      pinchStartZoomY = zoomPercentY;
+      pinchAxis = null;
     }, { passive: true });
     gameBoardWrapEl.addEventListener("touchmove", (event) => {
       if (currentScreen !== "game" || !pinchZoomActive || event.touches.length !== 2) return;
-      const nextDistance = getTouchDistance(event.touches[0], event.touches[1]);
-      if (!Number.isFinite(nextDistance) || pinchStartDistance <= 0) return;
+      const nextSpan = getTouchSpan(event.touches[0], event.touches[1]);
+      if (!Number.isFinite(nextSpan.x) || !Number.isFinite(nextSpan.y)) return;
+
+      const deltaX = Math.abs(nextSpan.x - pinchStartSpanX);
+      const deltaY = Math.abs(nextSpan.y - pinchStartSpanY);
+
+      if (!pinchAxis) {
+        if (deltaX < PINCH_AXIS_DETECTION_THRESHOLD_PX && deltaY < PINCH_AXIS_DETECTION_THRESHOLD_PX) return;
+        if (deltaX >= deltaY * PINCH_AXIS_DOMINANCE_RATIO) pinchAxis = "x";
+        else if (deltaY >= deltaX * PINCH_AXIS_DOMINANCE_RATIO) pinchAxis = "y";
+        else pinchAxis = deltaX >= deltaY ? "x" : "y";
+      }
+
       event.preventDefault();
-      const scale = nextDistance / pinchStartDistance;
-      setZoomPercent(pinchStartZoom * scale);
+
+      if (pinchAxis === "x") {
+        if (pinchStartSpanX <= 0 || nextSpan.x <= 0) return;
+        const scaleX = nextSpan.x / pinchStartSpanX;
+        setZoomPercents(pinchStartZoomX * scaleX, pinchStartZoomY);
+      } else {
+        if (pinchStartSpanY <= 0 || nextSpan.y <= 0) return;
+        const scaleY = nextSpan.y / pinchStartSpanY;
+        setZoomPercents(pinchStartZoomX, pinchStartZoomY * scaleY);
+      }
     }, { passive: false });
     gameBoardWrapEl.addEventListener("touchend", (event) => {
       if (event.touches.length < 2) {
         pinchZoomActive = false;
-        pinchStartDistance = 0;
+        pinchStartSpanX = 0;
+        pinchStartSpanY = 0;
+        pinchAxis = null;
       }
     }, { passive: true });
     gameBoardWrapEl.addEventListener("touchcancel", () => {
       pinchZoomActive = false;
-      pinchStartDistance = 0;
+      pinchStartSpanX = 0;
+      pinchStartSpanY = 0;
+      pinchAxis = null;
     }, { passive: true });
     boardEl.addEventListener("touchstart", (event) => {
       if (currentScreen !== "game" || gameOver || currentPlayer !== HUMAN || autoPlayEnabled || bombTouchActive) return;
