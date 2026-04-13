@@ -882,6 +882,7 @@
       width: max-content;
       margin: 0 auto;
       animation: fade-slide 360ms ease both;
+      touch-action: none;
     }
 
     .dot {
@@ -1291,6 +1292,28 @@
       }
     }
 
+    @keyframes gesture-trace-fade-out {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    .gesture-trace-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 44;
+    }
+
+    .gesture-trace-canvas[hidden] {
+      display: none;
+    }
+
+    .gesture-trace-canvas.fading {
+      animation: gesture-trace-fade-out 280ms ease forwards;
+    }
+
     @media (max-width: 920px) {
       .top {
         align-items: stretch;
@@ -1622,6 +1645,8 @@
     </section>
   </div>
 
+  <canvas id="gesture-trace-canvas" class="gesture-trace-canvas" aria-hidden="true" hidden></canvas>
+
   <script>
     const HUMAN = "human";
     const AI = "ai";
@@ -1811,6 +1836,13 @@
       const iceBoosterStateEl = document.getElementById("ice-booster-state");
       const energyWidgetEl = document.getElementById("energy-widget");
       const energyStateEl = document.getElementById("energy-state");
+      const gestureTraceCanvasEl = document.getElementById("gesture-trace-canvas");
+      let gestureTraceFadeTimer = null;
+      let gestureTraceCtx = null;
+      let gestureTraceStartX = 0;
+      let gestureTraceStartY = 0;
+      let gestureTraceTipX = 0;
+      let gestureTraceTipY = 0;
       const precisionEdgeModalEl = document.getElementById("precision-edge-modal");
       const precisionEdgeTopEl = document.getElementById("precision-edge-top");
       const precisionEdgeRightEl = document.getElementById("precision-edge-right");
@@ -1857,6 +1889,15 @@
     let gesturePreviewEdge = null;
     let gestureMode = "idle";
     let suppressEdgeClickUntil = 0;
+    if (gestureTraceCanvasEl) {
+      const resizeGestureTraceCanvas = () => {
+        const dpr = window.devicePixelRatio || 1;
+        gestureTraceCanvasEl.width = Math.round(window.innerWidth * dpr);
+        gestureTraceCanvasEl.height = Math.round(window.innerHeight * dpr);
+      };
+      resizeGestureTraceCanvas();
+      window.addEventListener("resize", resizeGestureTraceCanvas, { passive: true });
+    }
     let campaignLevels = [];
     let campaignLevelIndex = 0;
     let campaignOrderIndex = 0;
@@ -2337,6 +2378,109 @@
       return { row, col };
     }
 
+    function ensureGestureTraceCanvasSize() {
+      if (!gestureTraceCanvasEl) return;
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.round(window.innerWidth * dpr);
+      const height = Math.round(window.innerHeight * dpr);
+      if (gestureTraceCanvasEl.width !== width || gestureTraceCanvasEl.height !== height) {
+        gestureTraceCanvasEl.width = width;
+        gestureTraceCanvasEl.height = height;
+      }
+      if (!gestureTraceCtx) {
+        gestureTraceCtx = gestureTraceCanvasEl.getContext("2d");
+      }
+      if (gestureTraceCtx) {
+        gestureTraceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+    }
+
+    function drawGestureTrace(snapped = false, dx = 0, dy = 0) {
+      if (!gestureTraceCanvasEl) return;
+      ensureGestureTraceCanvasSize();
+      if (!gestureTraceCtx) return;
+
+      let x2 = gestureTraceTipX;
+      let y2 = gestureTraceTipY;
+      if (snapped) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          x2 = gestureTraceStartX + dx;
+          y2 = gestureTraceStartY;
+        } else {
+          x2 = gestureTraceStartX;
+          y2 = gestureTraceStartY + dy;
+        }
+      }
+
+      gestureTraceCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      gestureTraceCtx.beginPath();
+      gestureTraceCtx.arc(gestureTraceStartX, gestureTraceStartY, 5.5, 0, Math.PI * 2);
+      gestureTraceCtx.fillStyle = "rgba(20,99,93,0.56)";
+      gestureTraceCtx.fill();
+
+      gestureTraceCtx.beginPath();
+      gestureTraceCtx.moveTo(gestureTraceStartX, gestureTraceStartY);
+      gestureTraceCtx.lineTo(x2, y2);
+      gestureTraceCtx.lineWidth = snapped ? 5 : 4;
+      gestureTraceCtx.lineCap = "round";
+      gestureTraceCtx.strokeStyle = snapped ? "rgba(20,99,93,0.78)" : "rgba(20,99,93,0.5)";
+      gestureTraceCtx.setLineDash(snapped ? [] : [6, 5]);
+      gestureTraceCtx.stroke();
+      gestureTraceCtx.setLineDash([]);
+    }
+
+    function resetGestureTraceStyle() {
+      if (!gestureTraceCanvasEl) return;
+      if (gestureTraceCtx) {
+        gestureTraceCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      }
+    }
+
+    function showGestureTrace(x1, y1, x2, y2) {
+      if (!gestureTraceCanvasEl) return;
+      if (gestureTraceFadeTimer !== null) {
+        clearTimeout(gestureTraceFadeTimer);
+        gestureTraceFadeTimer = null;
+      }
+      gestureTraceCanvasEl.classList.remove("fading");
+      gestureTraceCanvasEl.hidden = false;
+      gestureTraceStartX = x1;
+      gestureTraceStartY = y1;
+      gestureTraceTipX = x2;
+      gestureTraceTipY = y2;
+      drawGestureTrace(false);
+    }
+
+    function updateGestureTraceTip(x2, y2) {
+      if (!gestureTraceCanvasEl) return;
+      gestureTraceTipX = x2;
+      gestureTraceTipY = y2;
+      drawGestureTrace(false);
+    }
+
+    function snapGestureTrace(dx, dy) {
+      if (!gestureTraceCanvasEl) return;
+      drawGestureTrace(true, dx, dy);
+    }
+
+    function hideGestureTrace(immediate = false) {
+      if (!gestureTraceCanvasEl) return;
+      if (gestureTraceFadeTimer !== null) return;
+      if (immediate) {
+        gestureTraceCanvasEl.hidden = true;
+        gestureTraceCanvasEl.classList.remove("fading");
+        resetGestureTraceStyle();
+        return;
+      }
+      gestureTraceCanvasEl.classList.add("fading");
+      gestureTraceFadeTimer = setTimeout(() => {
+        gestureTraceFadeTimer = null;
+        gestureTraceCanvasEl.hidden = true;
+        gestureTraceCanvasEl.classList.remove("fading");
+        resetGestureTraceStyle();
+      }, 300);
+    }
+
     function clearGesturePreview() {
       if (!gesturePreviewEdge) return;
       const selector = `.${gesturePreviewEdge.type === "h" ? "hedge" : "vedge"}[data-type="${gesturePreviewEdge.type}"][data-row="${gesturePreviewEdge.row}"][data-col="${gesturePreviewEdge.col}"]`;
@@ -2363,13 +2507,9 @@
     function findClosestBoxFromTouchStart(clientX, clientY) {
       let nearest = null;
       let nearestDistance = Number.POSITIVE_INFINITY;
-      let touchedInsideAnyBox = false;
 
       for (const boxEl of boardEl.querySelectorAll(".box")) {
         const rect = boxEl.getBoundingClientRect();
-        const inside = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
-        if (inside) touchedInsideAnyBox = true;
-
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
         const distance = Math.hypot(clientX - cx, clientY - cy);
@@ -2379,7 +2519,6 @@
         }
       }
 
-      if (!touchedInsideAnyBox) return null;
       return nearest;
     }
 
@@ -3928,6 +4067,7 @@
       gestureStartBox = startBox;
       gestureMode = "gesture";
       clearGesturePreview();
+      showGestureTrace(touch.clientX, touch.clientY, touch.clientX, touch.clientY);
     }, { passive: false });
     boardEl.addEventListener("touchmove", (event) => {
       if (!gestureTouchActive || !gestureStartBox || event.touches.length !== 1) return;
@@ -3938,14 +4078,19 @@
       const dx = touch.clientX - gestureStartX;
       const dy = touch.clientY - gestureStartY;
       const moveDistance = Math.hypot(dx, dy);
+
+      updateGestureTraceTip(touch.clientX, touch.clientY);
+
       if (moveDistance < GESTURE_MOVE_THRESHOLD_PX) return;
 
       const nextEdge = resolveGestureEdge(gestureStartBox, dx, dy);
       if (!nextEdge) {
+        hideGestureTrace();
         openPrecisionEdgePicker(gestureStartBox);
         return;
       }
 
+      snapGestureTrace(dx, dy);
       setGesturePreview(nextEdge);
     }, { passive: false });
     boardEl.addEventListener("touchend", (event) => {
@@ -3965,6 +4110,7 @@
         clearGesturePreview();
         gestureMode = "idle";
       }
+      hideGestureTrace();
       gestureTouchActive = false;
       gestureStartBox = null;
     }, { passive: false });
@@ -3975,6 +4121,7 @@
         gestureMode = "idle";
         clearGesturePreview();
       }
+      hideGestureTrace(true);
     }, { passive: true });
     if (precisionEdgeTopEl) precisionEdgeTopEl.addEventListener("click", handlePrecisionEdgePick);
     if (precisionEdgeRightEl) precisionEdgeRightEl.addEventListener("click", handlePrecisionEdgePick);
