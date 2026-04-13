@@ -1300,29 +1300,32 @@
     }
 
     .box.energy-bonus {
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.34), 0 0 0 2px rgba(255, 208, 102, 0.34), 0 0 14px rgba(255, 184, 41, 0.5);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.46), 0 0 0 3px rgba(255, 208, 102, 0.52), 0 0 24px rgba(255, 184, 41, 0.82);
+      overflow: visible;
+      z-index: 7;
     }
 
     .box.energy-bonus:not(.objective-complete) {
       animation: energy-bonus-pulse 1.08s ease-in-out infinite;
     }
 
-    .box.energy-bonus::before {
-      content: "+10";
+    .bonus-sprite-wrap {
       position: absolute;
-      top: 2px;
-      right: 2px;
-      z-index: 5;
-      border-radius: 999px;
-      padding: 2px 5px;
-      font-size: 0.56rem;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      color: #2b1900;
-      background: linear-gradient(180deg, rgba(255, 244, 182, 0.98), rgba(255, 194, 76, 0.98));
-      border: 1px solid rgba(139, 88, 0, 0.58);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 215, 110, 0.55);
+      inset: 0;
       pointer-events: none;
+      z-index: 8;
+      overflow: visible;
+    }
+
+    .bonus-sprite {
+      position: absolute;
+      left: 50%;
+      bottom: -6px;
+      width: clamp(58px, calc(var(--box-size) * 1.55), 108px);
+      height: clamp(58px, calc(var(--box-size) * 1.55), 108px);
+      transform: translateX(-50%);
+      object-fit: contain;
+      filter: drop-shadow(0 7px 12px rgba(0, 0, 0, 0.32));
     }
 
     .box.human {
@@ -2268,12 +2271,21 @@
     let levelVideoPlayToken = 0;
     let movingBonusBox = null;
     let movingBonusTimerId = null;
+    let bonusAnimTimerId = null;
+    let bonusAnimFrameIndex = 0;
     const GESTURE_MOVE_THRESHOLD_PX = 12;
     const GESTURE_DOMINANCE_RATIO = 1.5;
     const PINCH_AXIS_DETECTION_THRESHOLD_PX = 6;
     const PINCH_AXIS_DOMINANCE_RATIO = 1.2;
     const MOVING_BONUS_ENERGY = 10;
     const MOVING_BONUS_RELOCATE_MS = 5000;
+    const BONUS_ANIM_FRAMES = [
+      "assets/bonus/1.png",
+      "assets/bonus/2.png",
+      "assets/bonus/3.png",
+      "assets/bonus/4.png",
+    ];
+    const BONUS_ANIM_INTERVAL_MS = 250;
     const playerSwooshSfx = new Audio("sounds/player_swoosh.mp3");
     const agentSwooshSfx = new Audio("sounds/agent_swoosh.mp3");
     const objectiveSfx = new Audio("sound/objective.mp3");
@@ -2347,6 +2359,31 @@
       if (movingBonusTimerId === null) return;
       window.clearTimeout(movingBonusTimerId);
       movingBonusTimerId = null;
+    }
+
+    function updateBonusFrameSprites() {
+      if (!boardEl) return;
+      const src = BONUS_ANIM_FRAMES[bonusAnimFrameIndex] || BONUS_ANIM_FRAMES[0] || "";
+      if (!src) return;
+      for (const img of boardEl.querySelectorAll(".bonus-sprite")) {
+        if (img.getAttribute("src") !== src) {
+          img.setAttribute("src", src);
+        }
+      }
+    }
+
+    function startBonusFrameAnimation() {
+      if (bonusAnimTimerId !== null) return;
+      bonusAnimTimerId = window.setInterval(() => {
+        bonusAnimFrameIndex = (bonusAnimFrameIndex + 1) % BONUS_ANIM_FRAMES.length;
+        updateBonusFrameSprites();
+      }, BONUS_ANIM_INTERVAL_MS);
+    }
+
+    function stopBonusFrameAnimation() {
+      if (bonusAnimTimerId === null) return;
+      window.clearInterval(bonusAnimTimerId);
+      bonusAnimTimerId = null;
     }
 
     function getCompletedSidesForBox(row, col) {
@@ -2543,6 +2580,7 @@
       }
       if (name !== "game") {
         clearMovingBonusTimer();
+        stopBonusFrameAnimation();
       }
       if (name !== "game") {
         closePrecisionEdgePicker();
@@ -2560,6 +2598,7 @@
         requestAnimationFrame(() => {
           if (currentScreen === "game") layoutBoardBetweenHudAndBoosters();
         });
+        startBonusFrameAnimation();
         ensureMovingBonusCycle();
         maybeScheduleTurn();
       }
@@ -2862,6 +2901,8 @@
       aiEnergyPoints = 0;
       movingBonusBox = null;
       clearMovingBonusTimer();
+      stopBonusFrameAnimation();
+      bonusAnimFrameIndex = 0;
       currentPlayer = HUMAN;
       gameOver = false;
     }
@@ -4533,6 +4574,8 @@
         const row = Number(boxEl.dataset.row);
         const col = Number(boxEl.dataset.col);
         boxEl.classList.remove("human", "ai", "revealed", "info-revealed", "objective-complete", "energy-bonus");
+        const priorBonusOverlay = boxEl.querySelector(".bonus-sprite-wrap");
+        if (priorBonusOverlay) priorBonusOverlay.remove();
         const owner = boxes[row][col];
         if (owner) {
           boxEl.classList.add(owner, "revealed");
@@ -4551,6 +4594,18 @@
           }
           if (movingBonusBox && movingBonusBox.row === row && movingBonusBox.col === col) {
             boxEl.classList.add("energy-bonus");
+            const bonusOverlay = document.createElement("div");
+            bonusOverlay.className = "bonus-sprite-wrap";
+
+            const bonusSprite = document.createElement("img");
+            bonusSprite.className = "bonus-sprite";
+            bonusSprite.setAttribute("aria-hidden", "true");
+            bonusSprite.alt = "";
+            bonusSprite.draggable = false;
+            bonusSprite.src = BONUS_ANIM_FRAMES[bonusAnimFrameIndex] || BONUS_ANIM_FRAMES[0];
+
+            bonusOverlay.appendChild(bonusSprite);
+            boxEl.appendChild(bonusOverlay);
           }
         }
       }
