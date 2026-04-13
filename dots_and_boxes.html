@@ -363,13 +363,13 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(20, 26, 32, 0.52);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      box-shadow: 0 8px 24px rgba(17, 25, 30, 0.28);
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      border: none;
+      box-shadow: none;
     }
 
     .booster-bomb {
@@ -458,11 +458,17 @@
     }
 
     .booster-icon-img {
-      width: 30px;
-      height: 30px;
+      width: 38px;
+      height: 38px;
       object-fit: contain;
       filter: grayscale(0.35) contrast(0.95);
       pointer-events: none;
+    }
+
+    .booster-bomb .booster-icon-img,
+    .booster-ice .booster-icon-img {
+      width: 42px;
+      height: 42px;
     }
 
     .booster-state {
@@ -2077,6 +2083,9 @@
       const gameConfigEl = document.getElementById("game-config");
       const gameRestartEl = document.getElementById("game-restart");
       const gameBoardWrapEl = document.getElementById("game-board-wrap");
+      const gameStageEl = document.querySelector(".game-stage");
+      const gameSideUiEl = document.querySelector(".game-side-ui");
+      const gameBottomUiEl = document.querySelector(".game-bottom-ui");
       const gameZoomEl = document.getElementById("game-zoom");
       const gameZoomValueEl = document.getElementById("game-zoom-value");
       const gameDebugEl = document.getElementById("game-debug");
@@ -2170,6 +2179,37 @@
     const GESTURE_DOMINANCE_RATIO = 1.5;
     const PINCH_AXIS_DETECTION_THRESHOLD_PX = 6;
     const PINCH_AXIS_DOMINANCE_RATIO = 1.2;
+    const playerSwooshSfx = new Audio("sounds/player_swoosh.mp3");
+    const agentSwooshSfx = new Audio("sounds/agent_swoosh.mp3");
+    const objectiveSfx = new Audio("sound/objective.mp3");
+    const boxCompletedSfx = new Audio("sound/box_completed.mp3");
+    playerSwooshSfx.preload = "auto";
+    agentSwooshSfx.preload = "auto";
+    objectiveSfx.preload = "auto";
+    boxCompletedSfx.preload = "auto";
+    objectiveSfx.addEventListener("error", () => {
+      if (objectiveSfx.src.includes("sounds/objective.mp3")) return;
+      objectiveSfx.src = "sounds/objective.mp3";
+      objectiveSfx.load();
+    });
+    boxCompletedSfx.addEventListener("error", () => {
+      if (boxCompletedSfx.src.includes("sounds/box_completed.mp3")) return;
+      boxCompletedSfx.src = "sounds/box_completed.mp3";
+      boxCompletedSfx.load();
+    });
+
+    function playSfx(audioEl) {
+      if (!audioEl) return;
+      try {
+        audioEl.currentTime = 0;
+        const playPromise = audioEl.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(() => {});
+        }
+      } catch (_error) {
+        // Ignore sound playback failures (autoplay policy, etc.).
+      }
+    }
 
     function showLevelTransition(message, duration = 900) {
       if (!levelTransitionEl || !levelTransitionTextEl) return;
@@ -2234,8 +2274,20 @@
       }
       if (name !== "game") {
         closePrecisionEdgePicker();
+        gameBoardWrapEl.style.position = "";
+        gameBoardWrapEl.style.left = "";
+        gameBoardWrapEl.style.transform = "";
+        gameBoardWrapEl.style.top = "";
+        gameBoardWrapEl.style.bottom = "";
+        gameBoardWrapEl.style.width = "";
+        gameBoardWrapEl.style.maxWidth = "";
+        gameBoardWrapEl.style.maxHeight = "";
       }
       if (name === "game") {
+        layoutBoardBetweenHudAndBoosters();
+        requestAnimationFrame(() => {
+          if (currentScreen === "game") layoutBoardBetweenHudAndBoosters();
+        });
         maybeScheduleTurn();
       }
     }
@@ -2781,6 +2833,8 @@
         return;
       }
 
+      playSfx(agentSwooshSfx);
+
       const edgeSelector = `.${move.type === "h" ? "hedge" : "vedge"}[data-type="${move.type}"][data-row="${move.row}"][data-col="${move.col}"]`;
       const edgeEl = boardEl.querySelector(edgeSelector);
       if (!edgeEl) {
@@ -2953,6 +3007,7 @@
       closePrecisionEdgePicker();
       if (gameOver || currentPlayer !== HUMAN || autoPlayEnabled) return;
       if (isEdgeClaimed(type, row, col)) return;
+      playSfx(playerSwooshSfx);
       applyMove(type, row, col, HUMAN);
     }
 
@@ -3470,6 +3525,48 @@
       return `repeat(${dotsRows * 2 - 1}, ${getDisplayCellPxY()}px)`;
     }
 
+    function layoutBoardBetweenHudAndBoosters() {
+      if (currentScreen !== "game" || !gameBoardWrapEl || !gameStageEl || !gameSideUiEl || !gameBottomUiEl) return null;
+
+      const stageRect = gameStageEl.getBoundingClientRect();
+      const hudRect = gameSideUiEl.getBoundingClientRect();
+      const boostersRect = gameBottomUiEl.getBoundingClientRect();
+      if (!stageRect.height || !stageRect.width) return null;
+
+      const topGap = Math.max(8, Math.round(hudRect.bottom - stageRect.top + 8));
+      const bottomGapPx = Math.max(8, Math.round(stageRect.bottom - boostersRect.top + 8));
+      const availableHeight = Math.max(120, Math.round(stageRect.height - topGap - bottomGapPx));
+      const availableWidth = Math.max(220, Math.round(stageRect.width - 12));
+
+      gameBoardWrapEl.style.position = "absolute";
+      gameBoardWrapEl.style.left = "50%";
+      gameBoardWrapEl.style.transform = "translateX(-50%)";
+      gameBoardWrapEl.style.top = `${topGap}px`;
+      gameBoardWrapEl.style.bottom = `${bottomGapPx}px`;
+      gameBoardWrapEl.style.maxHeight = `${availableHeight}px`;
+      gameBoardWrapEl.style.width = `${availableWidth}px`;
+      gameBoardWrapEl.style.maxWidth = `${availableWidth}px`;
+
+      return { availableWidth, availableHeight };
+    }
+
+    function fitBoardToHudGap() {
+      const layout = layoutBoardBetweenHudAndBoosters();
+      if (!layout || !boardEl) return;
+      const { availableWidth, availableHeight } = layout;
+
+      const contentWidth = boardEl.scrollWidth;
+      const contentHeight = boardEl.scrollHeight;
+      if (!contentWidth || !contentHeight) return;
+
+      const fitRatio = Math.min(availableWidth / contentWidth, availableHeight / contentHeight);
+      if (!Number.isFinite(fitRatio) || fitRatio <= 0) return;
+      if (Math.abs(1 - fitRatio) < 0.05) return;
+
+      setZoomPercents(zoomPercentX * fitRatio, zoomPercentY * fitRatio);
+      layoutBoardBetweenHudAndBoosters();
+    }
+
     function applyBoardSizing() {
       const parsedEdge = Number(edgeSizeEl.value);
       edgePx = Number.isFinite(parsedEdge) ? clamp(Math.floor(parsedEdge), 8, 60) : 36;
@@ -3495,6 +3592,7 @@
       boardEl.style.setProperty("--line-pad", `${pad}px`);
       boardEl.style.setProperty("--box-size", `${cellX}px`);
       boardEl.style.setProperty("--box-height", `${boxHeight}px`);
+      layoutBoardBetweenHudAndBoosters();
     }
 
     function isEdgeClaimed(type, row, col) {
@@ -4235,9 +4333,29 @@
       if (player === AI) {
         lastAgentMove = { type, row, col };
       }
+
+      let completedObjectiveNow = false;
+      let objectiveCountsBefore = null;
+      if (player === HUMAN && gameModeEl.value === "objective" && requiredObjectivesExist()) {
+        objectiveCountsBefore = countCapturedTokensByPlayer(player);
+      }
+
       const boxesWon = resolveBoxesFromEdge(type, row, col, player);
       if (player === HUMAN && boxesWon > 0) {
         energyPoints += boxesWon;
+        if (objectiveCountsBefore) {
+          const objectiveCountsAfter = countCapturedTokensByPlayer(player);
+          completedObjectiveNow = Object.entries(objectiveTargets).some(([token, needed]) => {
+            if (needed <= 0) return false;
+            return (objectiveCountsBefore[token] || 0) < needed && (objectiveCountsAfter[token] || 0) >= needed;
+          });
+        }
+      }
+
+      if (completedObjectiveNow) {
+        playSfx(objectiveSfx);
+      } else if (player === HUMAN && boxesWon > 0) {
+        playSfx(boxCompletedSfx);
       }
       refreshBoardUI();
 
@@ -4359,6 +4477,7 @@
       refreshBoardUI();
       setStatus();
       showScreen("game");
+      fitBoardToHudGap();
       maybeScheduleTurn();
     }
 
@@ -4572,6 +4691,7 @@
       if (gestureMode === "gesture" && gesturePreviewEdge) {
         const { type, row, col } = gesturePreviewEdge;
         if (!isEdgeClaimed(type, row, col) && !gameOver && currentPlayer === HUMAN && !autoPlayEnabled) {
+          playSfx(playerSwooshSfx);
           applyMove(type, row, col, HUMAN);
         }
       }
@@ -4673,6 +4793,10 @@
         useIceBooster();
       }
     });
+    window.addEventListener("resize", () => {
+      if (currentScreen !== "game") return;
+      layoutBoardBetweenHudAndBoosters();
+    }, { passive: true });
     resolveFreezeOverlayImage();
     applyBoardSizing();
     clearPreview();
