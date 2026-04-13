@@ -309,6 +309,48 @@
       color: var(--ink);
     }
 
+    .level-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      display: none;
+      background: #000;
+    }
+
+    .level-video-overlay.open {
+      display: block;
+    }
+
+    .level-video-player {
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      display: block;
+      background: #000;
+    }
+
+    .level-video-skip {
+      position: absolute;
+      right: clamp(10px, 2.4vw, 22px);
+      bottom: clamp(10px, 2.4vh, 22px);
+      border: 1px solid rgba(255, 255, 255, 0.38);
+      background: rgba(15, 20, 28, 0.64);
+      color: #fff;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
+      z-index: 2;
+    }
+
+    .level-video-skip:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.9);
+      outline-offset: 2px;
+    }
+
     @keyframes level-transition-fade {
       0% {
         opacity: 0;
@@ -606,6 +648,18 @@
       60%,
       100% {
         left: 140%;
+      }
+    }
+
+    @keyframes energy-bonus-pulse {
+      0%,
+      100% {
+        transform: scale(1);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.34), 0 0 0 2px rgba(255, 208, 102, 0.34), 0 0 14px rgba(255, 184, 41, 0.5);
+      }
+      50% {
+        transform: scale(1.03);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 0 0 2px rgba(255, 223, 133, 0.55), 0 0 20px rgba(255, 184, 41, 0.76);
       }
     }
 
@@ -1243,6 +1297,32 @@
       transform: skewX(-22deg);
       pointer-events: none;
       animation: objective-box-shine 2.4s ease-in-out infinite;
+    }
+
+    .box.energy-bonus {
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.34), 0 0 0 2px rgba(255, 208, 102, 0.34), 0 0 14px rgba(255, 184, 41, 0.5);
+    }
+
+    .box.energy-bonus:not(.objective-complete) {
+      animation: energy-bonus-pulse 1.08s ease-in-out infinite;
+    }
+
+    .box.energy-bonus::before {
+      content: "+10";
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      z-index: 5;
+      border-radius: 999px;
+      padding: 2px 5px;
+      font-size: 0.56rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: #2b1900;
+      background: linear-gradient(180deg, rgba(255, 244, 182, 0.98), rgba(255, 194, 76, 0.98));
+      border: 1px solid rgba(139, 88, 0, 0.58);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 215, 110, 0.55);
+      pointer-events: none;
     }
 
     .box.human {
@@ -1905,6 +1985,11 @@
     </section>
   </div>
 
+  <div id="level-video-overlay" class="level-video-overlay" hidden aria-hidden="true">
+    <video id="level-video-player" class="level-video-player" playsinline preload="metadata"></video>
+    <button id="level-video-skip" class="level-video-skip" type="button">Skip</button>
+  </div>
+
   <canvas id="gesture-trace-canvas" class="gesture-trace-canvas" aria-hidden="true" hidden></canvas>
 
   <script>
@@ -2072,6 +2157,9 @@
     const confettiCanvasEl = document.getElementById("confetti-canvas");
     const endNewGameEl = document.getElementById("end-new-game");
     const endCloseEl = document.getElementById("end-close");
+      const levelVideoOverlayEl = document.getElementById("level-video-overlay");
+      const levelVideoPlayerEl = document.getElementById("level-video-player");
+      const levelVideoSkipEl = document.getElementById("level-video-skip");
       const objectiveCardEl = document.getElementById("objective-card");
       const objectiveHintEl = document.getElementById("objective-hint");
       const objectiveGridEl = document.getElementById("objective-grid");
@@ -2149,6 +2237,7 @@
     let aiFrozenTurns = 0;
     let lastAgentMove = null;
     let energyPoints = 0;
+    let aiEnergyPoints = 0;
     let levelTransitionTimerId = null;
     let levelCountdownToken = 0;
     let gestureTouchActive = false;
@@ -2175,10 +2264,16 @@
     let currentCampaignFileName = "";
     let campaignSource = "unknown";
     let endPrimaryAction = "restart";
+    let levelVideoFilesCache = null;
+    let levelVideoPlayToken = 0;
+    let movingBonusBox = null;
+    let movingBonusTimerId = null;
     const GESTURE_MOVE_THRESHOLD_PX = 12;
     const GESTURE_DOMINANCE_RATIO = 1.5;
     const PINCH_AXIS_DETECTION_THRESHOLD_PX = 6;
     const PINCH_AXIS_DOMINANCE_RATIO = 1.2;
+    const MOVING_BONUS_ENERGY = 10;
+    const MOVING_BONUS_RELOCATE_MS = 5000;
     const playerSwooshSfx = new Audio("sounds/player_swoosh.mp3");
     const agentSwooshSfx = new Audio("sounds/agent_swoosh.mp3");
     const objectiveSfx = new Audio("sound/objective.mp3");
@@ -2248,6 +2343,180 @@
       tick();
     }
 
+    function clearMovingBonusTimer() {
+      if (movingBonusTimerId === null) return;
+      window.clearTimeout(movingBonusTimerId);
+      movingBonusTimerId = null;
+    }
+
+    function getCompletedSidesForBox(row, col) {
+      let completed = 0;
+      if (hEdges[row]?.[col] !== null) completed += 1;
+      if (hEdges[row + 1]?.[col] !== null) completed += 1;
+      if (vEdges[row]?.[col] !== null) completed += 1;
+      if (vEdges[row]?.[col + 1] !== null) completed += 1;
+      return completed;
+    }
+
+    function getMovingBonusCandidatesByPriority() {
+      const groups = {
+        3: [],
+        2: [],
+        1: [],
+        any: [],
+      };
+
+      for (let r = 0; r < boxRows; r += 1) {
+        for (let c = 0; c < boxCols; c += 1) {
+          if (boxes[r][c] !== null) continue;
+          const completedSides = getCompletedSidesForBox(r, c);
+          const ref = { row: r, col: c };
+          groups.any.push(ref);
+          if (completedSides === 3) groups[3].push(ref);
+          else if (completedSides === 2) groups[2].push(ref);
+          else if (completedSides === 1) groups[1].push(ref);
+        }
+      }
+
+      if (groups[3].length > 0) return groups[3];
+      if (groups[2].length > 0) return groups[2];
+      if (groups[1].length > 0) return groups[1];
+      return groups.any;
+    }
+
+    function pickMovingBonusBox(preferDifferent = true) {
+      const candidates = getMovingBonusCandidatesByPriority();
+      if (candidates.length === 0) return null;
+
+      let pool = candidates;
+      if (preferDifferent && movingBonusBox && candidates.length > 1) {
+        const filtered = candidates.filter((box) => box.row !== movingBonusBox.row || box.col !== movingBonusBox.col);
+        if (filtered.length > 0) pool = filtered;
+      }
+
+      const selected = pool[Math.floor(Math.random() * pool.length)] || null;
+      return selected ? { row: selected.row, col: selected.col } : null;
+    }
+
+    function scheduleMovingBonusTick() {
+      clearMovingBonusTimer();
+      if (gameOver || currentScreen !== "game" || !movingBonusBox) return;
+      movingBonusTimerId = window.setTimeout(() => {
+        movingBonusBox = pickMovingBonusBox(true);
+        refreshBoardUI();
+        scheduleMovingBonusTick();
+      }, MOVING_BONUS_RELOCATE_MS);
+    }
+
+    function ensureMovingBonusCycle() {
+      clearMovingBonusTimer();
+      if (gameOver || currentScreen !== "game") return;
+
+      const activeStillOpen = movingBonusBox && boxes[movingBonusBox.row]?.[movingBonusBox.col] === null;
+      if (!activeStillOpen) {
+        movingBonusBox = pickMovingBonusBox(false);
+        refreshBoardUI();
+      }
+      scheduleMovingBonusTick();
+    }
+
+    function relocateMovingBonusNow() {
+      movingBonusBox = pickMovingBonusBox(true);
+      refreshBoardUI();
+      scheduleMovingBonusTick();
+    }
+
+    function cleanupLevelVideoOverlay() {
+      if (!levelVideoOverlayEl || !levelVideoPlayerEl) return;
+      levelVideoOverlayEl.classList.remove("open");
+      levelVideoOverlayEl.hidden = true;
+      levelVideoOverlayEl.setAttribute("aria-hidden", "true");
+      levelVideoPlayerEl.pause();
+      levelVideoPlayerEl.removeAttribute("src");
+      levelVideoPlayerEl.load();
+    }
+
+    async function listLevelVideoFiles() {
+      if (Array.isArray(levelVideoFilesCache)) return levelVideoFilesCache;
+      try {
+        const response = await fetch("videos/", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const html = await response.text();
+        const hrefMatches = [...html.matchAll(/href=["']([^"']+)["']/gi)];
+        const files = [];
+        for (const match of hrefMatches) {
+          const href = decodeURIComponent(match[1] || "").split("?")[0].split("#")[0];
+          const fileName = href.split("/").pop() || "";
+          if (!fileName || fileName.startsWith(".")) continue;
+          if (!fileName.toLowerCase().endsWith(".mp4")) continue;
+          files.push(fileName);
+        }
+        levelVideoFilesCache = Array.from(new Set(files));
+      } catch (_error) {
+        levelVideoFilesCache = [];
+      }
+      return levelVideoFilesCache;
+    }
+
+    async function resolveLevelVideoPath(levelNumber) {
+      const files = await listLevelVideoFiles();
+      const prefix = `Level_${levelNumber}`;
+      const match = files.find((fileName) => fileName.startsWith(prefix));
+      return match ? `videos/${match}` : "";
+    }
+
+    async function playLevelCompletionVideo(levelNumber) {
+      const videoPath = await resolveLevelVideoPath(levelNumber);
+      if (!videoPath || !levelVideoOverlayEl || !levelVideoPlayerEl || !levelVideoSkipEl) return false;
+
+      const token = ++levelVideoPlayToken;
+      return new Promise((resolve) => {
+        let settled = false;
+
+        const finalize = () => {
+          if (settled) return;
+          settled = true;
+          levelVideoPlayerEl.removeEventListener("ended", onEnded);
+          levelVideoPlayerEl.removeEventListener("error", onError);
+          levelVideoSkipEl.removeEventListener("click", onSkip);
+          cleanupLevelVideoOverlay();
+          resolve(true);
+        };
+
+        const onEnded = () => {
+          if (token !== levelVideoPlayToken) return;
+          finalize();
+        };
+
+        const onError = () => {
+          if (token !== levelVideoPlayToken) return;
+          finalize();
+        };
+
+        const onSkip = (event) => {
+          event.preventDefault();
+          if (token !== levelVideoPlayToken) return;
+          finalize();
+        };
+
+        levelVideoPlayerEl.addEventListener("ended", onEnded);
+        levelVideoPlayerEl.addEventListener("error", onError);
+        levelVideoSkipEl.addEventListener("click", onSkip);
+
+        levelVideoOverlayEl.hidden = false;
+        levelVideoOverlayEl.setAttribute("aria-hidden", "false");
+        levelVideoOverlayEl.classList.add("open");
+        levelVideoPlayerEl.src = videoPath;
+        levelVideoPlayerEl.load();
+        const playPromise = levelVideoPlayerEl.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(() => {
+            // If autoplay is blocked, keep the overlay and let user tap skip.
+          });
+        }
+      });
+    }
+
     function resolveFreezeOverlayImage() {
       const preferred = "assets/red_icecube.png";
       const fallback = "assets/red_icecubes.png";
@@ -2273,6 +2542,9 @@
         turnTimerId = null;
       }
       if (name !== "game") {
+        clearMovingBonusTimer();
+      }
+      if (name !== "game") {
         closePrecisionEdgePicker();
         gameBoardWrapEl.style.position = "";
         gameBoardWrapEl.style.left = "";
@@ -2288,6 +2560,7 @@
         requestAnimationFrame(() => {
           if (currentScreen === "game") layoutBoardBetweenHudAndBoosters();
         });
+        ensureMovingBonusCycle();
         maybeScheduleTurn();
       }
     }
@@ -2304,6 +2577,7 @@
         `board:${boxRows}x${boxCols}`,
         `art:${artText}`,
         `targets:${objectiveText}`,
+        `bonus:${movingBonusBox ? `${movingBonusBox.row},${movingBonusBox.col}` : "none"}`,
         `camp:${campaignOrderIndex + 1}/${CAMPAIGN_LEVEL_FILES.length}`,
         `file:${currentCampaignFileName ? currentCampaignFileName.split("/").pop() : "none"}`,
         `src:${campaignSource}`,
@@ -2501,6 +2775,7 @@
     }
 
     function showEndModal(outcome, message) {
+      clearMovingBonusTimer();
       ensureCampaignLevelsForProgression();
       if (currentCampaignFileName && campaignLevels.length > 0) {
         const resolvedIndex = campaignLevels.findIndex((level) => level.fileName === currentCampaignFileName);
@@ -2584,6 +2859,9 @@
       aiFrozenTurns = 0;
       lastAgentMove = null;
       energyPoints = 0;
+      aiEnergyPoints = 0;
+      movingBonusBox = null;
+      clearMovingBonusTimer();
       currentPlayer = HUMAN;
       gameOver = false;
     }
@@ -4254,7 +4532,7 @@
       for (const boxEl of boardEl.querySelectorAll(".box")) {
         const row = Number(boxEl.dataset.row);
         const col = Number(boxEl.dataset.col);
-        boxEl.classList.remove("human", "ai", "revealed", "info-revealed", "objective-complete");
+        boxEl.classList.remove("human", "ai", "revealed", "info-revealed", "objective-complete", "energy-bonus");
         const owner = boxes[row][col];
         if (owner) {
           boxEl.classList.add(owner, "revealed");
@@ -4270,6 +4548,9 @@
             boxEl.style.background = hiddenBoxColors[row]?.[col] || "rgba(220, 220, 220, 0.9)";
           } else {
             boxEl.style.background = hiddenBoxGrayColors[row]?.[col] || "rgba(176, 182, 188, 0.26)";
+          }
+          if (movingBonusBox && movingBonusBox.row === row && movingBonusBox.col === col) {
+            boxEl.classList.add("energy-bonus");
           }
         }
       }
@@ -4341,6 +4622,17 @@
       }
 
       const boxesWon = resolveBoxesFromEdge(type, row, col, player);
+      let movingBonusClaimText = "";
+      if (boxesWon > 0 && movingBonusBox && boxes[movingBonusBox.row]?.[movingBonusBox.col] === player) {
+        if (player === HUMAN) {
+          energyPoints += MOVING_BONUS_ENERGY;
+        } else {
+          aiEnergyPoints += MOVING_BONUS_ENERGY;
+        }
+        movingBonusClaimText = `${player === HUMAN ? "You" : "Agent"} claimed +${MOVING_BONUS_ENERGY} bonus energy.`;
+        relocateMovingBonusNow();
+      }
+
       if (player === HUMAN && boxesWon > 0) {
         energyPoints += boxesWon;
         if (objectiveCountsBefore) {
@@ -4371,7 +4663,8 @@
         currentPlayer = player === HUMAN ? AI : HUMAN;
       }
       const bonusText = boxesWon > 0 ? `${player === HUMAN ? "You" : "Agent"} completed ${boxesWon} box${boxesWon > 1 ? "es" : ""}.` : "";
-      setStatus(bonusText);
+      const statusText = [movingBonusClaimText, bonusText].filter(Boolean).join(" ");
+      setStatus(statusText);
       maybeScheduleTurn();
     }
 
@@ -4506,7 +4799,7 @@
     });
     artFileEl.addEventListener("change", onArtFileSelected);
     endCloseEl.addEventListener("click", hideEndModal);
-    endNewGameEl.addEventListener("click", () => {
+    endNewGameEl.addEventListener("click", async () => {
       hideEndModal();
       if (endPrimaryAction === "next-level") {
         ensureCampaignLevelsForProgression();
@@ -4515,14 +4808,13 @@
         const nextIndex = ensureCampaignLevelLoaded(nextFileName);
         const next = nextIndex >= 0 ? campaignLevels[nextIndex] : null;
         if (next) {
+          await playLevelCompletionVideo(orderIndex + 1);
           showScreen("game");
           setStatus(`Loading Level ${orderIndex + 2}: ${next.label}...`);
-          startLevelCountdown(orderIndex + 2, next.label, () => {
-            if (!loadCampaignLevelByFileName(nextFileName, { announce: true })) {
-              setStatus("Could not load next level. Please restart campaign.");
-              newGame();
-            }
-          });
+          if (!loadCampaignLevelByFileName(nextFileName, { announce: true })) {
+            setStatus("Could not load next level. Please restart campaign.");
+            newGame();
+          }
           return;
         }
         if (!loadCampaignLevelByFileName(nextFileName, { announce: true })) {
