@@ -399,6 +399,144 @@
       flex-wrap: nowrap;
       justify-content: center;
       max-width: calc(100vw - 16px);
+      overflow: visible;
+    }
+
+    .booster-energy.tutorial-focus,
+    .booster-bomb.tutorial-focus {
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.54), 0 0 0 6px rgba(255, 208, 120, 0.36), 0 10px 24px rgba(37, 50, 56, 0.3);
+    }
+
+    .booster-energy.tutorial-focus::after,
+    .booster-bomb.tutorial-focus::after {
+      content: "";
+      position: absolute;
+      inset: -7px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 224, 156, 0.72);
+      pointer-events: none;
+      animation: tutorial-booster-ring 1.35s ease-out infinite;
+    }
+
+    .tutorial-boosters-coach {
+      position: absolute;
+      left: 50%;
+      bottom: 62px;
+      width: 52px;
+      height: 68px;
+      z-index: 6;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.3));
+      animation: tutorial-hand-bob 1.2s ease-in-out infinite;
+      transform: translateX(-50%);
+    }
+
+    .tutorial-boosters-coach[hidden] {
+      display: none;
+    }
+
+    .tutorial-boosters-hand {
+      width: 36px;
+      height: 36px;
+      margin: 0 auto;
+      background: rgba(255, 252, 245, 0.92);
+      border: 1px solid rgba(57, 91, 96, 0.24);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+    }
+
+    .tutorial-boosters-hand svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .tutorial-boosters-arrow {
+      width: 3px;
+      height: 24px;
+      margin: 4px auto 0;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255, 250, 232, 0.96), rgba(255, 208, 110, 0.9));
+      position: relative;
+    }
+
+    .tutorial-boosters-arrow::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -8px;
+      transform: translateX(-50%);
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 9px solid rgba(255, 208, 110, 0.95);
+    }
+
+    .tutorial-bomb-drag-coach {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .tutorial-bomb-drag-coach[hidden] {
+      display: none;
+    }
+
+    .tutorial-bomb-drag-path {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255, 236, 183, 0.9), rgba(255, 187, 77, 0.95));
+      transform-origin: 0 50%;
+      filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.22));
+      opacity: 0.94;
+    }
+
+    .tutorial-bomb-drag-path::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-left: 9px solid rgba(255, 187, 77, 0.95);
+      border-top: 6px solid transparent;
+      border-bottom: 6px solid transparent;
+    }
+
+    .tutorial-bomb-drop-target {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 236, 184, 0.95);
+      box-shadow: 0 0 0 5px rgba(255, 187, 77, 0.34);
+      transform: translate(-50%, -50%);
+      animation: tutorial-target-pulse 1.1s ease-in-out infinite;
+    }
+
+    .tutorial-bomb-drag-hand {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(255, 252, 245, 0.96);
+      border: 1px solid rgba(57, 91, 96, 0.28);
+      transform: translate(-50%, -50%);
+      animation: tutorial-drag-hand 1.25s ease-in-out infinite;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.22));
+    }
+
+    .tutorial-bomb-drag-hand svg {
+      width: 24px;
+      height: 24px;
     }
 
     .booster-bar {
@@ -628,6 +766,51 @@
       60%,
       100% {
         left: 140%;
+      }
+    }
+
+    @keyframes tutorial-booster-ring {
+      0% {
+        transform: scale(0.92);
+        opacity: 0.84;
+      }
+      70% {
+        transform: scale(1.16);
+        opacity: 0.2;
+      }
+      100% {
+        transform: scale(1.2);
+        opacity: 0;
+      }
+    }
+
+    @keyframes tutorial-hand-bob {
+      0%,
+      100% {
+        transform: translateX(-50%) translateY(0);
+      }
+      50% {
+        transform: translateX(-50%) translateY(-5px);
+      }
+    }
+
+    @keyframes tutorial-target-pulse {
+      0%,
+      100% {
+        box-shadow: 0 0 0 4px rgba(255, 187, 77, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(255, 187, 77, 0.18);
+      }
+    }
+
+    @keyframes tutorial-drag-hand {
+      0%,
+      100% {
+        transform: translate(-50%, -50%) translate(0, 0);
+      }
+      60% {
+        transform: translate(-50%, -50%) translate(var(--drag-dx, 0px), var(--drag-dy, 0px));
       }
     }
 
@@ -2189,6 +2372,25 @@
               <span id="ice-booster-state" class="booster-state" aria-hidden="true">GO</span>
             </div>
           </div>
+          <div id="tutorial-boosters-coach" class="tutorial-boosters-coach" aria-hidden="true" hidden>
+            <div class="tutorial-boosters-hand">
+              <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+                <path d="M24 58c-5.6 0-10-4.4-10-10V28.5c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5V14.5c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5v11h2V9.5C34 7 36 5 38.5 5S43 7 43 9.5v16h2V14c0-2.5 2-4.5 4.5-4.5S54 11.5 54 14v22.6c0 5-1.7 9.9-4.9 13.7l-3.6 4.3c-1.9 2.3-4.8 3.4-7.7 3.4H24z" fill="#fff8ef" stroke="#2f4348" stroke-width="2.2" stroke-linejoin="round"/>
+                <path d="M23 30.5V48c0 .8.2 1.6.6 2.3" fill="none" stroke="#d8c5ae" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="tutorial-boosters-arrow" aria-hidden="true"></div>
+          </div>
+          <div id="tutorial-bomb-drag-coach" class="tutorial-bomb-drag-coach" aria-hidden="true" hidden>
+            <div id="tutorial-bomb-drag-path" class="tutorial-bomb-drag-path"></div>
+            <div id="tutorial-bomb-drop-target" class="tutorial-bomb-drop-target"></div>
+            <div id="tutorial-bomb-drag-hand" class="tutorial-bomb-drag-hand">
+              <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+                <path d="M24 58c-5.6 0-10-4.4-10-10V28.5c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5V14.5c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5v11h2V9.5C34 7 36 5 38.5 5S43 7 43 9.5v16h2V14c0-2.5 2-4.5 4.5-4.5S54 11.5 54 14v22.6c0 5-1.7 9.9-4.9 13.7l-3.6 4.3c-1.9 2.3-4.8 3.4-7.7 3.4H24z" fill="#fff8ef" stroke="#2f4348" stroke-width="2.2" stroke-linejoin="round"/>
+                <path d="M23 30.5V48c0 .8.2 1.6.6 2.3" fill="none" stroke="#d8c5ae" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
           <input id="game-zoom" class="visually-hidden" type="range" min="35" max="250" step="5" value="75" aria-label="Board zoom percentage in game" />
           <span id="game-zoom-value" class="visually-hidden">75%</span>
         </div>
@@ -2258,6 +2460,33 @@
     const ZOOM_MIN_PERCENT = 35;
     const ZOOM_MAX_PERCENT = 250;
     const ZOOM_STEP_PERCENT = 5;
+    const TUTORIAL_LEVEL_TWO_FILE = "levels/Tutorial_Level_2_Cat.10x10.3c.pixel.txt";
+    const TUTORIAL_LEVEL_TWO_SOURCE = `# PIXEL_ART_TEXT v1
+  image: cat.webp
+  width: 10
+  height: 10
+  mode: RGBA
+  transparent_as_dot: false
+
+  [PALETTE]
+  A = (93,167,93,255)
+  B = (7,12,29,255)
+  C = (63,160,164,255)
+
+  [PIXELS]
+  A A A A A A A A B A
+  A A A A A A A A B A
+  A B A A A B A B A A
+  A B B B B B A B A A
+  A B C B C B A A B A
+  A B B B B B A A B A
+  A A B B B B B B B A
+  A A B B B B B B A A
+  A A B B B B B B A A
+  A A B A B A A B A A
+
+  [DIFFICULTY]
+  A = 1`;
     const CAMPAIGN_LEVEL_FILES = [
       "levels/Level_1_Cactus.10x10.6c.pixel.txt",
       "levels/Level_2_pingu_.6x12.3c.pixel.txt",
@@ -2449,6 +2678,11 @@
       const iceBoosterStateEl = document.getElementById("ice-booster-state");
       const energyWidgetEl = document.getElementById("energy-widget");
       const energyStateEl = document.getElementById("energy-state");
+      const tutorialBoostersCoachEl = document.getElementById("tutorial-boosters-coach");
+      const tutorialBombDragCoachEl = document.getElementById("tutorial-bomb-drag-coach");
+      const tutorialBombDragPathEl = document.getElementById("tutorial-bomb-drag-path");
+      const tutorialBombDropTargetEl = document.getElementById("tutorial-bomb-drop-target");
+      const tutorialBombDragHandEl = document.getElementById("tutorial-bomb-drag-hand");
       const gestureTraceCanvasEl = document.getElementById("gesture-trace-canvas");
       let gestureTraceFadeRafId = null;
       let gestureTraceCtx = null;
@@ -2534,14 +2768,19 @@
     let bonusAnimFrameIndex = 0;
     let tutorialActive = false;
     let tutorialCompleted = false;
+    let tutorialLevelIndex = 0;
     let tutorialGestureDismissed = false;
     let tutorialCoachStep = 0;
+    let tutorial2HumanMoves = 0;
+    let tutorial2BombSequenceInProgress = false;
     const GESTURE_MOVE_THRESHOLD_PX = 12;
     const GESTURE_DOMINANCE_RATIO = 1.5;
     const PINCH_AXIS_DETECTION_THRESHOLD_PX = 6;
     const PINCH_AXIS_DOMINANCE_RATIO = 1.2;
     const MOVING_BONUS_ENERGY = 10;
     const MOVING_BONUS_RELOCATE_MS = 5000;
+    const TUTORIAL2_BOMB_TARGET_ROW = 4;
+    const TUTORIAL2_BOMB_TARGET_COL = 4;
     const BONUS_ANIM_FRAMES = [
       "assets/bonus/1.png",
       "assets/bonus/2.png",
@@ -2641,10 +2880,145 @@
     }
 
     function updateTutorialGameUi() {
-      energyWidgetEl?.classList.toggle("tutorial-hidden", tutorialActive);
-      bombBoosterEl?.classList.toggle("tutorial-hidden", tutorialActive);
-      iceBoosterEl?.classList.toggle("tutorial-hidden", !isIceBoosterUnlocked());
+      const isTutorialLevelOne = tutorialActive && tutorialLevelIndex === 1;
+      const isTutorialLevelTwo = tutorialActive && tutorialLevelIndex === 2;
+      energyWidgetEl?.classList.toggle("tutorial-hidden", isTutorialLevelOne);
+      bombBoosterEl?.classList.toggle("tutorial-hidden", isTutorialLevelOne);
+      iceBoosterEl?.classList.toggle("tutorial-hidden", tutorialActive || !isIceBoosterUnlocked());
+      energyWidgetEl?.classList.toggle("tutorial-focus", isTutorialLevelTwo);
+      bombBoosterEl?.classList.toggle("tutorial-focus", isTutorialLevelTwo);
+      updateTutorialTwoBoosterCoaches();
       updateTutorialGestureCoach();
+    }
+
+    function waitForMs(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    function hideTutorialTwoCoaches() {
+      if (tutorialBoostersCoachEl) {
+        tutorialBoostersCoachEl.hidden = true;
+        tutorialBoostersCoachEl.setAttribute("aria-hidden", "true");
+      }
+      if (tutorialBombDragCoachEl) {
+        tutorialBombDragCoachEl.hidden = true;
+        tutorialBombDragCoachEl.setAttribute("aria-hidden", "true");
+      }
+    }
+
+    function getTutorialBombTargetBox() {
+      const targetRow = Math.max(0, Math.min(boxRows - 1, TUTORIAL2_BOMB_TARGET_ROW));
+      const targetCol = Math.max(0, Math.min(boxCols - 1, TUTORIAL2_BOMB_TARGET_COL));
+      return boardEl?.querySelector(`.box[data-row="${targetRow}"][data-col="${targetCol}"]`) || null;
+    }
+
+    function updateTutorialTwoBoosterCoaches() {
+      const tutorialTwoActive = tutorialActive && tutorialLevelIndex === 2 && currentScreen === "game" && !tutorial2BombSequenceInProgress;
+      if (!tutorialTwoActive) {
+        hideTutorialTwoCoaches();
+        return;
+      }
+
+      const bombReady = !gameOver && energyPoints >= getBombNeededEnergy();
+      const showEnergyCoach = !bombReady && tutorial2HumanMoves < 2;
+      if (tutorialBoostersCoachEl) {
+        tutorialBoostersCoachEl.hidden = !showEnergyCoach;
+        tutorialBoostersCoachEl.setAttribute("aria-hidden", showEnergyCoach ? "false" : "true");
+        if (showEnergyCoach && gameBottomUiEl && energyWidgetEl) {
+          const barRect = gameBottomUiEl.getBoundingClientRect();
+          const energyRect = energyWidgetEl.getBoundingClientRect();
+          const centerX = Math.round(energyRect.left - barRect.left + (energyRect.width / 2));
+          tutorialBoostersCoachEl.style.left = `${centerX}px`;
+        }
+      }
+
+      const showBombCoach = bombReady;
+      if (!tutorialBombDragCoachEl || !tutorialBombDragPathEl || !tutorialBombDropTargetEl || !tutorialBombDragHandEl || !gameStageEl || !bombBoosterEl) {
+        return;
+      }
+      if (!showBombCoach) {
+        tutorialBombDragCoachEl.hidden = true;
+        tutorialBombDragCoachEl.setAttribute("aria-hidden", "true");
+        return;
+      }
+
+      const targetBoxEl = getTutorialBombTargetBox();
+      if (!targetBoxEl) {
+        tutorialBombDragCoachEl.hidden = true;
+        tutorialBombDragCoachEl.setAttribute("aria-hidden", "true");
+        return;
+      }
+
+      const bombRect = bombBoosterEl.getBoundingClientRect();
+      const targetRect = targetBoxEl.getBoundingClientRect();
+      if (!bombRect.width || !targetRect.width) {
+        tutorialBombDragCoachEl.hidden = true;
+        tutorialBombDragCoachEl.setAttribute("aria-hidden", "true");
+        return;
+      }
+
+      const startX = Math.round(bombRect.left + (bombRect.width / 2));
+      const startY = Math.round(bombRect.top + (bombRect.height / 2));
+      const endX = Math.round(targetRect.left + (targetRect.width / 2));
+      const endY = Math.round(targetRect.top + (targetRect.height / 2));
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const length = Math.max(24, Math.round(Math.hypot(dx, dy)));
+      const angleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
+
+      tutorialBombDragPathEl.style.left = `${startX}px`;
+      tutorialBombDragPathEl.style.top = `${startY}px`;
+      tutorialBombDragPathEl.style.width = `${length}px`;
+      tutorialBombDragPathEl.style.transform = `rotate(${angleDeg}deg)`;
+
+      tutorialBombDropTargetEl.style.left = `${endX}px`;
+      tutorialBombDropTargetEl.style.top = `${endY}px`;
+
+      tutorialBombDragHandEl.style.left = `${startX}px`;
+      tutorialBombDragHandEl.style.top = `${startY}px`;
+      tutorialBombDragHandEl.style.setProperty("--drag-dx", `${dx}px`);
+      tutorialBombDragHandEl.style.setProperty("--drag-dy", `${dy}px`);
+
+      tutorialBombDragCoachEl.hidden = false;
+      tutorialBombDragCoachEl.setAttribute("aria-hidden", "false");
+    }
+
+    function revealAllBoxesInfo() {
+      for (let r = 0; r < boxRows; r += 1) {
+        for (let c = 0; c < boxCols; c += 1) {
+          infoRevealMask[r][c] = true;
+        }
+      }
+    }
+
+    async function runTutorialTwoBombSequence() {
+      if (!tutorialActive || tutorialLevelIndex !== 2 || tutorial2BombSequenceInProgress) return;
+      tutorial2BombSequenceInProgress = true;
+      if (turnTimerId !== null) {
+        window.clearTimeout(turnTimerId);
+        turnTimerId = null;
+      }
+      gameOver = true;
+      updateTutorialGameUi();
+
+      statusEl.textContent = "This booster reveals the true color of a box.";
+      showLevelTransition("This booster reveals the true color of a box.", 1000);
+      await waitForMs(1050);
+
+      revealAllBoxesInfo();
+      refreshBoardUI();
+
+      await waitForMs(1100);
+      statusEl.textContent = "Ok, let's move on to the next level.";
+      showLevelTransition("Ok, let's move on to the next level.", 1400);
+      await waitForMs(2200);
+
+      tutorialActive = false;
+      tutorialLevelIndex = 0;
+      tutorialCompleted = true;
+      tutorial2BombSequenceInProgress = false;
+      updateTutorialGameUi();
+      await startLevelOne();
     }
 
     function hideTutorialGestureCoach(markDismissed = false) {
@@ -2661,7 +3035,16 @@
       if (step === 0) return "Start inside the middle box and swipe up to claim its top edge.";
       if (step === 1) return "Perfect! Now swipe right from the same box to claim one of its side edges.";
       if (step === 2) return "Great. A box is complete when all four edges are claimed. Finish the remaining sides to capture the box and keep your turn.";
-      return "Perfect! Keep playing until you complete the whole level. The Agent is now playing against you.";
+      if (step === 3) return "Perfect! You'll get an extra move every time you complete a box. Make one more move.";
+      return "Great. Keep playing until you complete the whole level. The Agent is now playing against you.";
+    }
+
+    function getTutorialLevelTwoMessage() {
+      const needed = getBombNeededEnergy();
+      if (energyPoints < needed) {
+        return `Tutorial 2: complete boxes to gain Energy. Reach ${needed} Energy to unlock the Bomb booster.`;
+      }
+      return "Great! Bomb is ready. Drag it onto the board and use it once to finish this tutorial.";
     }
 
     function getTutorialCoachTargetMove(step = tutorialCoachStep) {
@@ -2673,6 +3056,7 @@
     }
 
     function advanceTutorialCoachOnMove(type, row, col, player, boxesWon) {
+      if (tutorialLevelIndex !== 1) return "";
       if (!tutorialActive || tutorialGestureDismissed || player !== HUMAN) return "";
 
       const target = getTutorialCoachTargetMove();
@@ -2688,9 +3072,16 @@
       if (tutorialCoachStep === 2 && boxesWon > 0) {
         showLevelTransition("Perfect!", 950);
         tutorialCoachStep = 3;
+        updateTutorialGestureCoach();
+        return "Perfect! You'll get an extra move every time you complete a box. Make one more move.";
+      }
+
+      if (tutorialCoachStep === 3) {
+        showLevelTransition("Great!", 900);
+        tutorialCoachStep = 4;
         tutorialGestureDismissed = true;
         updateTutorialGestureCoach();
-        return "Perfect! Keep playing to finish the level. The Agent is now in the match.";
+        return "Great. The Agent is now in the match.";
       }
 
       return "";
@@ -2698,7 +3089,35 @@
 
     function updateTutorialGestureCoach() {
       if (!tutorialGestureCoachEl || !tutorialGestureDemoEl || !tutorialGestureCardEl) return;
-      if (!tutorialActive || currentScreen !== "game" || (tutorialGestureDismissed && tutorialCoachStep < 3)) {
+      if (!tutorialActive || currentScreen !== "game") {
+        hideTutorialGestureCoach(false);
+        return;
+      }
+
+      const wrapRect = gameBoardWrapEl?.getBoundingClientRect();
+      const boardRect = boardEl?.getBoundingClientRect();
+      if (!wrapRect || !boardRect || !wrapRect.width || !wrapRect.height) {
+        hideTutorialGestureCoach(false);
+        return;
+      }
+
+      const cardWidth = Math.min(248, Math.max(180, wrapRect.width - 24));
+      tutorialGestureCardEl.style.width = `${cardWidth}px`;
+      tutorialGestureCardEl.style.left = `${Math.round(wrapRect.width / 2)}px`;
+      const cardHeight = Math.max(40, Math.round(tutorialGestureCardEl.getBoundingClientRect().height || 0));
+      const gridTop = Math.round(boardRect.top - wrapRect.top);
+      const cardTop = Math.max(8, Math.min(gridTop - cardHeight - 8, 56));
+      tutorialGestureCardEl.style.top = `${cardTop}px`;
+
+      if (tutorialLevelIndex === 2) {
+        tutorialGestureCardEl.textContent = getTutorialLevelTwoMessage();
+        tutorialGestureDemoEl.style.display = "none";
+        tutorialGestureCoachEl.hidden = false;
+        tutorialGestureCoachEl.setAttribute("aria-hidden", "false");
+        return;
+      }
+
+      if (tutorialGestureDismissed && tutorialCoachStep < 3) {
         hideTutorialGestureCoach(false);
         return;
       }
@@ -2717,8 +3136,6 @@
         return;
       }
 
-      const wrapRect = gameBoardWrapEl.getBoundingClientRect();
-      const boardRect = boardEl.getBoundingClientRect();
       const boxRect = targetBoxEl.getBoundingClientRect();
       const upperBoxRect = upperBoxEl.getBoundingClientRect();
       const rightBoxRect = rightBoxEl.getBoundingClientRect();
@@ -2730,15 +3147,7 @@
       const centerX = boxRect.left - wrapRect.left + (boxRect.width / 2);
       const startCenterY = boxRect.top - wrapRect.top + (boxRect.height / 2);
       const endCenterY = upperBoxRect.top - wrapRect.top + (upperBoxRect.height / 2);
-      const cardWidth = Math.min(248, Math.max(180, wrapRect.width - 24));
       const handSize = 46;
-
-      tutorialGestureCardEl.style.width = `${cardWidth}px`;
-      tutorialGestureCardEl.style.left = `${Math.round(wrapRect.width / 2)}px`;
-      const cardHeight = Math.max(40, Math.round(tutorialGestureCardEl.getBoundingClientRect().height || 0));
-      const gridTop = Math.round(boardRect.top - wrapRect.top);
-      const cardTop = Math.max(8, Math.min(gridTop - cardHeight - 8, 56));
-      tutorialGestureCardEl.style.top = `${cardTop}px`;
 
       if (tutorialCoachStep === 0) {
         const swipeDistance = Math.max(30, Math.round(startCenterY - endCenterY));
@@ -3424,6 +3833,9 @@
       bombUses += 1;
       refreshBoardUI();
       setStatus(`Bomb used: -${cost} energy. A 3x3 area was revealed.`);
+      if (tutorialActive && tutorialLevelIndex === 2) {
+        runTutorialTwoBombSequence();
+      }
     }
 
     function getNearestBoxFromPoint(clientX, clientY) {
@@ -4305,11 +4717,19 @@
       gameBoardWrapEl.style.maxWidth = `${availableWidth}px`;
 
       updateTutorialGestureCoach();
+      updateTutorialTwoBoosterCoaches();
 
       return { availableWidth, availableHeight };
     }
 
-    function fitBoardToHudGap() {
+    function boardFitsWithinHudGap(availableWidth, availableHeight) {
+      if (!boardEl) return false;
+      return boardEl.scrollWidth <= availableWidth + 1 && boardEl.scrollHeight <= availableHeight + 1;
+    }
+
+    function fitBoardToHudGap(options = {}) {
+      const strict = options.strict === true;
+      const independentAxes = options.independentAxes === true;
       const layout = layoutBoardBetweenHudAndBoosters();
       if (!layout || !boardEl) return;
       const { availableWidth, availableHeight } = layout;
@@ -4318,18 +4738,55 @@
       const contentHeight = boardEl.scrollHeight;
       if (!contentWidth || !contentHeight) return;
 
-      const fitRatio = Math.min(availableWidth / contentWidth, availableHeight / contentHeight);
-      if (!Number.isFinite(fitRatio) || fitRatio <= 0) return;
-      if (Math.abs(1 - fitRatio) < 0.05) return;
+      const fitRatioX = availableWidth / contentWidth;
+      const fitRatioY = availableHeight / contentHeight;
+      if (!Number.isFinite(fitRatioX) || fitRatioX <= 0 || !Number.isFinite(fitRatioY) || fitRatioY <= 0) return;
+
+      if (independentAxes) {
+        if (!strict && Math.abs(1 - fitRatioX) < 0.05 && Math.abs(1 - fitRatioY) < 0.05) return;
+        setZoomPercents(zoomPercentX * fitRatioX, zoomPercentY * fitRatioY);
+        layoutBoardBetweenHudAndBoosters();
+        return;
+      }
+
+      const fitRatio = Math.min(fitRatioX, fitRatioY);
+      if (!strict && Math.abs(1 - fitRatio) < 0.05) return;
 
       setZoomPercents(zoomPercentX * fitRatio, zoomPercentY * fitRatio);
       layoutBoardBetweenHudAndBoosters();
     }
 
+    function maximizeBoardZoomToHudGap(axis = "both") {
+      const layout = layoutBoardBetweenHudAndBoosters();
+      if (!layout || !boardEl) return;
+      const { availableWidth, availableHeight } = layout;
+
+      let bestZoomX = zoomPercentX;
+      let bestZoomY = zoomPercentY;
+      while (zoomPercentX < ZOOM_MAX_PERCENT || zoomPercentY < ZOOM_MAX_PERCENT) {
+        const nextZoomX = axis === "y" ? zoomPercentX : Math.min(ZOOM_MAX_PERCENT, zoomPercentX + ZOOM_STEP_PERCENT);
+        const nextZoomY = axis === "x" ? zoomPercentY : Math.min(ZOOM_MAX_PERCENT, zoomPercentY + ZOOM_STEP_PERCENT);
+        if (nextZoomX === zoomPercentX && nextZoomY === zoomPercentY) break;
+
+        setZoomPercents(nextZoomX, nextZoomY);
+        layoutBoardBetweenHudAndBoosters();
+        if (!boardFitsWithinHudGap(availableWidth, availableHeight)) {
+          setZoomPercents(bestZoomX, bestZoomY);
+          layoutBoardBetweenHudAndBoosters();
+          return;
+        }
+
+        bestZoomX = zoomPercentX;
+        bestZoomY = zoomPercentY;
+      }
+    }
+
       function resetZoomToBoardFit() {
         setZoomPercent(100);
         layoutBoardBetweenHudAndBoosters();
-        fitBoardToHudGap();
+        fitBoardToHudGap({ strict: true, independentAxes: true });
+        maximizeBoardZoomToHudGap("x");
+        maximizeBoardZoomToHudGap("y");
       }
 
     function applyBoardSizing() {
@@ -4880,14 +5337,30 @@
 
     function completeTutorialStep() {
       gameOver = true;
-      statusEl.textContent = "Tutorial complete. Great job - Level 1 is ready.";
       hideTutorialGestureCoach(false);
+
+      if (tutorialLevelIndex === 1) {
+        statusEl.textContent = "Tutorial 1 complete. Next: Energy and Bomb booster.";
+        showEndModal("draw", "Nice. Next tutorial introduces Energy and the Bomb booster.");
+        endTitleEl.textContent = "Tutorial 1 Complete";
+        endPrimaryAction = "start-tutorial-2";
+        endNewGameEl.textContent = "Start Tutorial 2";
+        stopConfetti();
+        tutorialActive = false;
+        tutorialLevelIndex = 0;
+        tutorialGestureDismissed = false;
+        tutorialCoachStep = 0;
+        return;
+      }
+
+      statusEl.textContent = "Tutorial complete. Great job - Level 1 is ready.";
       showEndModal("draw", "You learned the basics. Next, play Level 1 with objectives.");
       endTitleEl.textContent = "Tutorial Complete";
       endPrimaryAction = "start-level-1";
       endNewGameEl.textContent = "Start Level 1";
       stopConfetti();
       tutorialActive = false;
+      tutorialLevelIndex = 0;
       tutorialCompleted = true;
     }
 
@@ -5096,6 +5569,7 @@
       updateBombUI();
       updateIceUI();
       refreshObjectiveScoreUI();
+      updateTutorialTwoBoosterCoaches();
       updateGameDebugUI();
     }
 
@@ -5182,6 +5656,9 @@
         playSfx(boxCompletedSfx);
       }
       const tutorialText = advanceTutorialCoachOnMove(type, row, col, player, boxesWon);
+      if (tutorialActive && tutorialLevelIndex === 2 && player === HUMAN && !tutorial2BombSequenceInProgress) {
+        tutorial2HumanMoves += 1;
+      }
       refreshBoardUI();
 
       if (hasMetObjectives(player)) {
@@ -5192,7 +5669,7 @@
       }
 
       if (finishIfNeeded()) return;
-      if (boxesWon === 0 && !(tutorialActive && player === HUMAN && !tutorialGestureDismissed)) {
+      if (boxesWon === 0 && !(tutorialActive && tutorialLevelIndex === 1 && player === HUMAN && !tutorialGestureDismissed)) {
         currentPlayer = player === HUMAN ? AI : HUMAN;
       }
       const bonusText = boxesWon > 0 ? `${player === HUMAN ? "You" : "Agent"} completed ${boxesWon} box${boxesWon > 1 ? "es" : ""}.` : "";
@@ -5273,6 +5750,9 @@
 
     function newGame() {
       tutorialActive = false;
+      tutorialLevelIndex = 0;
+      tutorial2HumanMoves = 0;
+      tutorial2BombSequenceInProgress = false;
       updateTutorialGameUi();
       const parsedRows = Number(rowsEl.value);
       const parsedCols = Number(colsEl.value);
@@ -5313,9 +5793,12 @@
 
     function startTutorialLevel() {
       tutorialActive = true;
+      tutorialLevelIndex = 1;
       tutorialCompleted = false;
       tutorialGestureDismissed = false;
       tutorialCoachStep = 0;
+      tutorial2HumanMoves = 0;
+      tutorial2BombSequenceInProgress = false;
       closePrecisionEdgePicker();
       clearGesturePreview();
       gestureTouchActive = false;
@@ -5340,6 +5823,69 @@
         resetZoomToBoardFit();
       setStatus("Tutorial: draw edges, complete boxes, and keep your turn when you score.");
       updateGameDebugUI("tutorial");
+      maybeScheduleTurn();
+    }
+
+    async function startTutorialEnergyBombLevel() {
+      tutorialActive = true;
+      tutorialLevelIndex = 2;
+      tutorialCompleted = false;
+      tutorialGestureDismissed = false;
+      tutorialCoachStep = 0;
+      tutorial2HumanMoves = 0;
+      tutorial2BombSequenceInProgress = false;
+      closePrecisionEdgePicker();
+      clearGesturePreview();
+      gestureTouchActive = false;
+      gestureDragInProgress = false;
+      gestureStartBox = null;
+      gestureMode = "idle";
+
+      setAutoPlayEnabled(false);
+      gameModeEl.value = "classic";
+      objectiveCardEl.style.display = "none";
+      updateTutorialGameUi();
+      edgeSizeEl.value = edgeSizeEl.value || "36";
+      currentCampaignFileName = "";
+
+      try {
+        let text = "";
+        try {
+          const response = await fetch(TUTORIAL_LEVEL_TWO_FILE, { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          text = await response.text();
+        } catch (_error) {
+          text = TUTORIAL_LEVEL_TWO_SOURCE;
+        }
+
+        loadedArt = parsePixelArtText(text);
+      } catch (error) {
+        loadedArt = null;
+        buildObjectiveInputsFromLoadedArt();
+        setStatus(`Could not load Tutorial 2 level: ${error.message}`);
+        return;
+      }
+
+      rowsEl.value = String(loadedArt.height);
+      colsEl.value = String(loadedArt.width);
+
+      setupState(loadedArt.height, loadedArt.width);
+      hideEndModal();
+      buildBoardUI();
+      refreshBoardUI();
+      showScreen("game");
+      resetZoomToBoardFit();
+      setStatus("Tutorial 2: collect Energy by completing boxes, then use Bomb once.");
+      updateGameDebugUI("tutorial-2");
+
+      try {
+        artFileNameEl.textContent = TUTORIAL_LEVEL_TWO_FILE.split("/").pop();
+        renderPreview(loadedArt);
+        buildObjectiveInputsFromLoadedArt();
+      } catch (error) {
+        console.warn("Tutorial 2 preview sync failed:", error);
+      }
+
       maybeScheduleTurn();
     }
 
@@ -5370,8 +5916,13 @@
     endCloseEl.addEventListener("click", hideEndModal);
     endNewGameEl.addEventListener("click", async () => {
       hideEndModal();
+      if (endPrimaryAction === "start-tutorial-2") {
+        startTutorialEnergyBombLevel();
+        return;
+      }
       if (endPrimaryAction === "start-level-1") {
         tutorialActive = false;
+        tutorialLevelIndex = 0;
         tutorialCompleted = true;
         await startLevelOne();
         return;
@@ -5675,6 +6226,9 @@
 
     async function startLevelOne() {
       tutorialActive = false;
+      tutorialLevelIndex = 0;
+      tutorial2HumanMoves = 0;
+      tutorial2BombSequenceInProgress = false;
       updateTutorialGameUi();
       let fileLoadError = null;
       try {
