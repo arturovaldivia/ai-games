@@ -805,6 +805,12 @@
       z-index: 4;
     }
 
+    #game-human-widget .widget-body {
+      align-items: flex-end;
+      text-align: right;
+      padding-left: 26px;
+    }
+
     .widget-score {
       font-size: 1.55rem;
       font-weight: 800;
@@ -991,6 +997,9 @@
     .board-wrap {
       position: relative;
       isolation: isolate;
+      display: grid;
+      place-items: center;
+      align-content: center;
       background: linear-gradient(160deg, rgba(178, 227, 221, 0.96), rgba(202, 235, 230, 0.95));
       border: 2px solid rgba(129, 206, 197, 0.95);
       border-radius: var(--radius);
@@ -1326,6 +1335,10 @@
       transform: translateX(-50%);
       object-fit: contain;
       filter: drop-shadow(0 7px 12px rgba(0, 0, 0, 0.32));
+    }
+
+    .tutorial-hidden {
+      display: none !important;
     }
 
     .box.human {
@@ -1822,8 +1835,8 @@
     <section id="intro-screen" class="screen screen-intro active" aria-label="Start screen">
       <div class="intro-card">
         <h1>Hello Player!</h1>
-        <p>Ready to start? Tap below to jump into Level 1 with the board and objectives preloaded.</p>
-        <button id="intro-start" type="button" class="intro-start">Start</button>
+        <p>Start with a quick Classic 5x5 tutorial to learn the rules, then continue to Level 1.</p>
+        <button id="intro-start" type="button" class="intro-start">Start Tutorial</button>
       </div>
     </section>
 
@@ -1927,8 +1940,8 @@
           </div>
         </div>
         <div class="game-bottom-ui" aria-label="In-game controls and boosters">
-          <button id="game-back" type="button" class="hud-btn secondary hud-icon-btn" aria-label="Back to config" title="Back to config">
-            <img src="assets/backarrow.png" alt="" draggable="false" />
+          <button id="game-back" type="button" class="hud-btn secondary hud-icon-btn" aria-label="Forward" title="Forward">
+            <img src="assets/forwardarrow.png" alt="" draggable="false" />
           </button>
           <button id="game-config" type="button" class="hud-btn secondary hud-icon-btn" aria-label="Open settings" title="Open settings">
             <img src="assets/gear.png" alt="" draggable="false" />
@@ -2273,6 +2286,8 @@
     let movingBonusTimerId = null;
     let bonusAnimTimerId = null;
     let bonusAnimFrameIndex = 0;
+    let tutorialActive = false;
+    let tutorialCompleted = false;
     const GESTURE_MOVE_THRESHOLD_PX = 12;
     const GESTURE_DOMINANCE_RATIO = 1.5;
     const PINCH_AXIS_DETECTION_THRESHOLD_PX = 6;
@@ -2361,6 +2376,28 @@
       movingBonusTimerId = null;
     }
 
+    function getCurrentProgressionLevelNumber() {
+      if (tutorialActive) return 0;
+      if (gameModeEl.value === "objective" && currentCampaignFileName) {
+        return getCurrentCampaignOrderIndex() + 1;
+      }
+      return Number.POSITIVE_INFINITY;
+    }
+
+    function isIceBoosterUnlocked() {
+      return getCurrentProgressionLevelNumber() >= 2;
+    }
+
+    function isMovingBonusUnlocked() {
+      return getCurrentProgressionLevelNumber() >= 3;
+    }
+
+    function updateTutorialGameUi() {
+      energyWidgetEl?.classList.toggle("tutorial-hidden", tutorialActive);
+      bombBoosterEl?.classList.toggle("tutorial-hidden", tutorialActive);
+      iceBoosterEl?.classList.toggle("tutorial-hidden", !isIceBoosterUnlocked());
+    }
+
     function updateBonusFrameSprites() {
       if (!boardEl) return;
       const src = BONUS_ANIM_FRAMES[bonusAnimFrameIndex] || BONUS_ANIM_FRAMES[0] || "";
@@ -2447,7 +2484,10 @@
 
     function ensureMovingBonusCycle() {
       clearMovingBonusTimer();
-      if (gameOver || currentScreen !== "game") return;
+      if (gameOver || currentScreen !== "game" || !isMovingBonusUnlocked()) {
+        movingBonusBox = null;
+        return;
+      }
 
       const activeStillOpen = movingBonusBox && boxes[movingBonusBox.row]?.[movingBonusBox.col] === null;
       if (!activeStillOpen) {
@@ -2914,12 +2954,18 @@
     }
 
     function canUseIceBooster() {
-      return !gameOver && currentPlayer === HUMAN && energyPoints >= ICE_ENERGY_COST;
+      return isIceBoosterUnlocked() && !gameOver && currentPlayer === HUMAN && energyPoints >= ICE_ENERGY_COST;
     }
 
     function updateIceUI() {
       iceBoosterEl.classList.remove("ready", "used");
       iceBoosterStateEl.classList.remove("cost");
+      if (!isIceBoosterUnlocked()) {
+        iceBoosterStateEl.style.display = "none";
+        iceBoosterEl.setAttribute("aria-label", "Ice cube locked until Level 2.");
+        iceBoosterEl.title = "Ice cube locked until Level 2.";
+        return;
+      }
       if (canUseIceBooster()) {
         iceBoosterEl.classList.add("ready");
         iceBoosterStateEl.textContent = "";
@@ -3468,6 +3514,7 @@
         campaignOrderIndex = resolvedOrder >= 0 ? resolvedOrder : Math.max(0, campaignLevelIndex);
         loadedArt = level.art;
         gameModeEl.value = "objective";
+        updateTutorialGameUi();
         rowsEl.value = String(level.art.height);
         colsEl.value = String(level.art.width);
         setObjectiveTargetsFromArt(level.art);
@@ -3477,6 +3524,7 @@
         buildBoardUI();
         refreshBoardUI();
         showScreen("game");
+          resetZoomToBoardFit();
         setStatus(statusMessage);
         updateGameDebugUI("prepared");
         maybeScheduleTurn();
@@ -3885,6 +3933,12 @@
       setZoomPercents(zoomPercentX * fitRatio, zoomPercentY * fitRatio);
       layoutBoardBetweenHudAndBoosters();
     }
+
+      function resetZoomToBoardFit() {
+        setZoomPercent(100);
+        layoutBoardBetweenHudAndBoosters();
+        fitBoardToHudGap();
+      }
 
     function applyBoardSizing() {
       const parsedEdge = Number(edgeSizeEl.value);
@@ -4432,9 +4486,39 @@
       }
     }
 
+    function completeTutorialStep() {
+      gameOver = true;
+      statusEl.textContent = "Tutorial complete. Great job - Level 1 is ready.";
+      showEndModal("draw", "You learned the basics. Next, play Level 1 with objectives.");
+      endTitleEl.textContent = "Tutorial Complete";
+      endPrimaryAction = "start-level-1";
+      endNewGameEl.textContent = "Start Level 1";
+      stopConfetti();
+      tutorialActive = false;
+      tutorialCompleted = true;
+    }
+
+    function forceHumanWinCurrentLevel() {
+      if (tutorialActive) {
+        completeTutorialStep();
+        return true;
+      }
+
+      gameOver = true;
+      statusEl.textContent = "QA shortcut: level marked as complete.";
+      showEndModal("human", "QA shortcut used. Proceed to the next level.");
+      return true;
+    }
+
     function finishIfNeeded() {
       if (gameModeEl.value === "objective") return false;
       if (!allBoxesClaimed()) return false;
+
+      if (tutorialActive) {
+        completeTutorialStep();
+        return true;
+      }
+
       gameOver = true;
       const human = scoreOf(HUMAN);
       const ai = scoreOf(AI);
@@ -4592,7 +4676,7 @@
           } else {
             boxEl.style.background = hiddenBoxGrayColors[row]?.[col] || "rgba(176, 182, 188, 0.26)";
           }
-          if (movingBonusBox && movingBonusBox.row === row && movingBonusBox.col === col) {
+          if (isMovingBonusUnlocked() && movingBonusBox && movingBonusBox.row === row && movingBonusBox.col === col) {
             boxEl.classList.add("energy-bonus");
             const bonusOverlay = document.createElement("div");
             bonusOverlay.className = "bonus-sprite-wrap";
@@ -4792,6 +4876,8 @@
     }
 
     function newGame() {
+      tutorialActive = false;
+      updateTutorialGameUi();
       const parsedRows = Number(rowsEl.value);
       const parsedCols = Number(colsEl.value);
       let rows = Number.isFinite(parsedRows) ? Math.max(2, Math.min(60, Math.floor(parsedRows))) : 5;
@@ -4829,6 +4915,36 @@
       maybeScheduleTurn();
     }
 
+    function startTutorialLevel() {
+      tutorialActive = true;
+      tutorialCompleted = false;
+      closePrecisionEdgePicker();
+      clearGesturePreview();
+      gestureTouchActive = false;
+      gestureDragInProgress = false;
+      gestureStartBox = null;
+      gestureMode = "idle";
+
+      setAutoPlayEnabled(false);
+      gameModeEl.value = "classic";
+      objectiveCardEl.style.display = "none";
+      updateTutorialGameUi();
+      rowsEl.value = "3";
+      colsEl.value = "3";
+      edgeSizeEl.value = edgeSizeEl.value || "36";
+      currentCampaignFileName = "";
+
+      setupState(3, 3);
+      hideEndModal();
+      buildBoardUI();
+      refreshBoardUI();
+      showScreen("game");
+        resetZoomToBoardFit();
+      setStatus("Tutorial: draw edges, complete boxes, and keep your turn when you score.");
+      updateGameDebugUI("tutorial");
+      maybeScheduleTurn();
+    }
+
     newGameEl.addEventListener("click", newGame);
     rowsEl.addEventListener("change", newGame);
     colsEl.addEventListener("change", newGame);
@@ -4856,6 +4972,12 @@
     endCloseEl.addEventListener("click", hideEndModal);
     endNewGameEl.addEventListener("click", async () => {
       hideEndModal();
+      if (endPrimaryAction === "start-level-1") {
+        tutorialActive = false;
+        tutorialCompleted = true;
+        await startLevelOne();
+        return;
+      }
       if (endPrimaryAction === "next-level") {
         ensureCampaignLevelsForProgression();
         const orderIndex = getCurrentCampaignOrderIndex();
@@ -4891,7 +5013,10 @@
     endModalEl.addEventListener("click", (event) => {
       if (event.target === endModalEl) hideEndModal();
     });
-    gameBackEl.addEventListener("click", () => showScreen("config"));
+    gameBackEl.addEventListener("click", () => {
+      if (currentScreen !== "game" || gameOver) return;
+      forceHumanWinCurrentLevel();
+    });
     gameConfigEl.addEventListener("click", () => showScreen("config"));
     if (gameRestartEl) gameRestartEl.addEventListener("click", () => newGame());
     bombBoosterEl.addEventListener("dragstart", (event) => {
@@ -5151,6 +5276,8 @@
     updateHintForAiLogic();
 
     async function startLevelOne() {
+      tutorialActive = false;
+      updateTutorialGameUi();
       let fileLoadError = null;
       try {
         // Prefer real campaign files so local .txt changes are picked up.
@@ -5181,12 +5308,12 @@
     }
 
     introStartEl.addEventListener("click", () => {
-      void startLevelOne();
+      startTutorialLevel();
     });
     introStartEl.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        void startLevelOne();
+        startTutorialLevel();
       }
     });
 
