@@ -1341,6 +1341,235 @@
       display: none !important;
     }
 
+    .tutorial-gesture-coach {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 12;
+      overflow: hidden;
+    }
+
+    .tutorial-gesture-coach[hidden] {
+      display: none;
+    }
+
+    .tutorial-gesture-card {
+      position: absolute;
+      left: 50%;
+      top: 14px;
+      width: min(248px, calc(100% - 24px));
+      transform: translateX(-50%);
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 252, 245, 0.96);
+      border: 1px solid rgba(38, 92, 87, 0.18);
+      box-shadow: 0 10px 24px rgba(37, 50, 56, 0.16);
+      color: rgba(24, 49, 55, 0.96);
+      font-size: 0.83rem;
+      font-weight: 600;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .tutorial-gesture-demo {
+      --swipe-distance: 56px;
+      position: absolute;
+      width: 90px;
+      height: 88px;
+      transform: translateX(-50%);
+    }
+
+    .tutorial-gesture-demo.horizontal {
+      height: 90px;
+      transform: none;
+    }
+
+    .tutorial-gesture-demo.info-only {
+      width: 92px;
+      height: 92px;
+      transform: none;
+    }
+
+    .tutorial-gesture-edge {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 54px;
+      height: 7px;
+      border-radius: 999px;
+      transform: translateX(-50%);
+      background: color-mix(in srgb, var(--human) 76%, white);
+      box-shadow: 0 0 0 2px rgba(20, 99, 93, 0.14), 0 0 16px rgba(20, 99, 93, 0.3);
+      animation: tutorial-edge-pulse 1.4s ease-in-out infinite;
+    }
+
+    .tutorial-gesture-track {
+      position: absolute;
+      left: 50%;
+      top: 10px;
+      bottom: 16px;
+      width: 4px;
+      border-radius: 999px;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg, rgba(20, 99, 93, 0.08), rgba(20, 99, 93, 0.72));
+      opacity: 0.78;
+    }
+
+    .tutorial-gesture-track::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -2px;
+      width: 12px;
+      height: 12px;
+      border-top: 4px solid rgba(20, 99, 93, 0.9);
+      border-left: 4px solid rgba(20, 99, 93, 0.9);
+      transform: translateX(-50%) rotate(45deg);
+      border-radius: 2px;
+    }
+
+    .tutorial-gesture-hand {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 46px;
+      height: 46px;
+      transform: translateX(-50%);
+      filter: drop-shadow(0 4px 8px rgba(37, 50, 56, 0.22));
+      animation: tutorial-hand-swipe 1.6s ease-in-out infinite;
+    }
+
+    .tutorial-gesture-hand svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .tutorial-gesture-box-outline {
+      display: none;
+      position: absolute;
+      inset: 8px;
+      border-radius: 14px;
+      border: 3px dashed rgba(20, 99, 93, 0.7);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.52), 0 0 18px rgba(20, 99, 93, 0.24);
+      animation: tutorial-box-pulse 1.5s ease-in-out infinite;
+    }
+
+    .tutorial-gesture-demo.horizontal .tutorial-gesture-edge {
+      left: calc(var(--swipe-distance) + 23px);
+      top: 50%;
+      width: 7px;
+      height: 54px;
+      transform: translate(-50%, -50%);
+      animation: tutorial-edge-pulse-vertical 1.4s ease-in-out infinite;
+    }
+
+    .tutorial-gesture-demo.horizontal .tutorial-gesture-track {
+      left: 23px;
+      right: auto;
+      top: 50%;
+      bottom: auto;
+      width: var(--swipe-distance);
+      height: 4px;
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, rgba(20, 99, 93, 0.08), rgba(20, 99, 93, 0.72));
+    }
+
+    .tutorial-gesture-demo.horizontal .tutorial-gesture-track::before {
+      left: auto;
+      right: -2px;
+      top: 50%;
+      transform: translateY(-50%) rotate(135deg);
+    }
+
+    .tutorial-gesture-demo.horizontal .tutorial-gesture-hand {
+      left: 0;
+      top: 50%;
+      bottom: auto;
+      transform: translateY(-50%);
+      animation: tutorial-hand-swipe-horizontal 1.6s ease-in-out infinite;
+    }
+
+    .tutorial-gesture-demo.info-only .tutorial-gesture-edge,
+    .tutorial-gesture-demo.info-only .tutorial-gesture-track,
+    .tutorial-gesture-demo.info-only .tutorial-gesture-hand {
+      display: none;
+    }
+
+    .tutorial-gesture-demo.info-only .tutorial-gesture-box-outline {
+      display: block;
+    }
+
+    @keyframes tutorial-hand-swipe {
+      0% {
+        transform: translate(-50%, 0);
+        opacity: 0;
+      }
+      16% {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
+      70% {
+        transform: translate(-50%, calc(-1 * var(--swipe-distance)));
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, calc(-1 * var(--swipe-distance)));
+        opacity: 0;
+      }
+    }
+
+    @keyframes tutorial-hand-swipe-horizontal {
+      0% {
+        transform: translate(0, -50%);
+        opacity: 0;
+      }
+      16% {
+        transform: translate(0, -50%);
+        opacity: 1;
+      }
+      70% {
+        transform: translate(var(--swipe-distance), -50%);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--swipe-distance), -50%);
+        opacity: 0;
+      }
+    }
+
+    @keyframes tutorial-edge-pulse {
+      0%,
+      100% {
+        transform: translateX(-50%) scaleX(1);
+      }
+      50% {
+        transform: translateX(-50%) scaleX(1.08);
+      }
+    }
+
+    @keyframes tutorial-edge-pulse-vertical {
+      0%,
+      100% {
+        transform: translate(-50%, -50%) scaleY(1);
+      }
+      50% {
+        transform: translate(-50%, -50%) scaleY(1.08);
+      }
+    }
+
+    @keyframes tutorial-box-pulse {
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.9;
+      }
+      50% {
+        transform: scale(1.04);
+        opacity: 1;
+      }
+    }
+
     .box.human {
       box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--human) 70%, white);
       transform: scale(0.96);
@@ -1965,6 +2194,20 @@
         </div>
         <div id="game-board-wrap" class="board-wrap">
           <div id="board" class="board" aria-label="Dots and Boxes board"></div>
+          <div id="tutorial-gesture-coach" class="tutorial-gesture-coach" hidden aria-hidden="true">
+            <div id="tutorial-gesture-card" class="tutorial-gesture-card">Start inside a box and swipe up to claim its top edge.</div>
+            <div id="tutorial-gesture-demo" class="tutorial-gesture-demo" aria-hidden="true">
+              <div class="tutorial-gesture-edge"></div>
+              <div class="tutorial-gesture-track"></div>
+              <div class="tutorial-gesture-box-outline"></div>
+              <div class="tutorial-gesture-hand">
+                <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+                  <path d="M24 58c-5.6 0-10-4.4-10-10V28.5c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5V14.5c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5v11h2V9.5C34 7 36 5 38.5 5S43 7 43 9.5v16h2V14c0-2.5 2-4.5 4.5-4.5S54 11.5 54 14v22.6c0 5-1.7 9.9-4.9 13.7l-3.6 4.3c-1.9 2.3-4.8 3.4-7.7 3.4H24z" fill="#fff8ef" stroke="#2f4348" stroke-width="2.2" stroke-linejoin="round"/>
+                  <path d="M23 30.5V48c0 .8.2 1.6.6 2.3" fill="none" stroke="#d8c5ae" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
         <div id="precision-edge-modal" class="precision-edge-modal" hidden aria-hidden="true">
           <section class="precision-edge-panel" role="dialog" aria-modal="true" aria-label="Choose edge precisely">
@@ -2193,6 +2436,9 @@
       const gameZoomEl = document.getElementById("game-zoom");
       const gameZoomValueEl = document.getElementById("game-zoom-value");
       const gameDebugEl = document.getElementById("game-debug");
+      const tutorialGestureCoachEl = document.getElementById("tutorial-gesture-coach");
+      const tutorialGestureCardEl = document.getElementById("tutorial-gesture-card");
+      const tutorialGestureDemoEl = document.getElementById("tutorial-gesture-demo");
       const levelTransitionEl = document.getElementById("level-transition");
       const levelTransitionTextEl = document.getElementById("level-transition-text");
       const gameHumanWidgetEl = document.getElementById("game-human-widget");
@@ -2288,6 +2534,8 @@
     let bonusAnimFrameIndex = 0;
     let tutorialActive = false;
     let tutorialCompleted = false;
+    let tutorialGestureDismissed = false;
+    let tutorialCoachStep = 0;
     const GESTURE_MOVE_THRESHOLD_PX = 12;
     const GESTURE_DOMINANCE_RATIO = 1.5;
     const PINCH_AXIS_DETECTION_THRESHOLD_PX = 6;
@@ -2396,6 +2644,144 @@
       energyWidgetEl?.classList.toggle("tutorial-hidden", tutorialActive);
       bombBoosterEl?.classList.toggle("tutorial-hidden", tutorialActive);
       iceBoosterEl?.classList.toggle("tutorial-hidden", !isIceBoosterUnlocked());
+      updateTutorialGestureCoach();
+    }
+
+    function hideTutorialGestureCoach(markDismissed = false) {
+      if (markDismissed) {
+        tutorialGestureDismissed = true;
+        tutorialCoachStep = 3;
+      }
+      if (!tutorialGestureCoachEl) return;
+      tutorialGestureCoachEl.hidden = true;
+      tutorialGestureCoachEl.setAttribute("aria-hidden", "true");
+    }
+
+    function getTutorialCoachMessage(step = tutorialCoachStep) {
+      if (step === 0) return "Start inside the middle box and swipe up to claim its top edge.";
+      if (step === 1) return "Perfect! Now swipe right from the same box to claim one of its side edges.";
+      if (step === 2) return "Great. A box is complete when all four edges are claimed. Finish the remaining sides to capture the box and keep your turn.";
+      return "Perfect! Keep playing until you complete the whole level. The Agent is now playing against you.";
+    }
+
+    function getTutorialCoachTargetMove(step = tutorialCoachStep) {
+      const centerRow = Math.floor((boxRows - 1) / 2);
+      const centerCol = Math.floor((boxCols - 1) / 2);
+      if (step === 0) return { type: "h", row: centerRow, col: centerCol };
+      if (step === 1) return { type: "v", row: centerRow, col: centerCol + 1 };
+      return null;
+    }
+
+    function advanceTutorialCoachOnMove(type, row, col, player, boxesWon) {
+      if (!tutorialActive || tutorialGestureDismissed || player !== HUMAN) return "";
+
+      const target = getTutorialCoachTargetMove();
+      if (tutorialCoachStep <= 1 && target && type === target.type && row === target.row && col === target.col) {
+        tutorialCoachStep += 1;
+        showLevelTransition("Perfect!", 850);
+        updateTutorialGestureCoach();
+        return tutorialCoachStep === 1
+          ? "Perfect! Now try the side swipe."
+          : "Great. Now finish the remaining edges to complete a box.";
+      }
+
+      if (tutorialCoachStep === 2 && boxesWon > 0) {
+        showLevelTransition("Perfect!", 950);
+        tutorialCoachStep = 3;
+        tutorialGestureDismissed = true;
+        updateTutorialGestureCoach();
+        return "Perfect! Keep playing to finish the level. The Agent is now in the match.";
+      }
+
+      return "";
+    }
+
+    function updateTutorialGestureCoach() {
+      if (!tutorialGestureCoachEl || !tutorialGestureDemoEl || !tutorialGestureCardEl) return;
+      if (!tutorialActive || currentScreen !== "game" || (tutorialGestureDismissed && tutorialCoachStep < 3)) {
+        hideTutorialGestureCoach(false);
+        return;
+      }
+
+      tutorialGestureCardEl.textContent = getTutorialCoachMessage();
+      tutorialGestureDemoEl.classList.remove("horizontal", "info-only");
+      tutorialGestureDemoEl.style.display = "block";
+
+      const targetRow = Math.floor((boxRows - 1) / 2);
+      const targetCol = Math.floor((boxCols - 1) / 2);
+      const targetBoxEl = boardEl.querySelector(`.box[data-row="${targetRow}"][data-col="${targetCol}"]`);
+      const upperBoxEl = boardEl.querySelector(`.box[data-row="${Math.max(0, targetRow - 1)}"][data-col="${targetCol}"]`);
+      const rightBoxEl = boardEl.querySelector(`.box[data-row="${targetRow}"][data-col="${Math.min(boxCols - 1, targetCol + 1)}"]`);
+      if (!targetBoxEl || !upperBoxEl || !rightBoxEl || !gameBoardWrapEl) {
+        hideTutorialGestureCoach(false);
+        return;
+      }
+
+      const wrapRect = gameBoardWrapEl.getBoundingClientRect();
+      const boardRect = boardEl.getBoundingClientRect();
+      const boxRect = targetBoxEl.getBoundingClientRect();
+      const upperBoxRect = upperBoxEl.getBoundingClientRect();
+      const rightBoxRect = rightBoxEl.getBoundingClientRect();
+      if (!wrapRect.width || !wrapRect.height || !boxRect.width || !boxRect.height || !upperBoxRect.width || !upperBoxRect.height || !rightBoxRect.width || !rightBoxRect.height) {
+        hideTutorialGestureCoach(false);
+        return;
+      }
+
+      const centerX = boxRect.left - wrapRect.left + (boxRect.width / 2);
+      const startCenterY = boxRect.top - wrapRect.top + (boxRect.height / 2);
+      const endCenterY = upperBoxRect.top - wrapRect.top + (upperBoxRect.height / 2);
+      const cardWidth = Math.min(248, Math.max(180, wrapRect.width - 24));
+      const handSize = 46;
+
+      tutorialGestureCardEl.style.width = `${cardWidth}px`;
+      tutorialGestureCardEl.style.left = `${Math.round(wrapRect.width / 2)}px`;
+      const cardHeight = Math.max(40, Math.round(tutorialGestureCardEl.getBoundingClientRect().height || 0));
+      const gridTop = Math.round(boardRect.top - wrapRect.top);
+      const cardTop = Math.max(8, Math.min(gridTop - cardHeight - 8, 56));
+      tutorialGestureCardEl.style.top = `${cardTop}px`;
+
+      if (tutorialCoachStep === 0) {
+        const swipeDistance = Math.max(30, Math.round(startCenterY - endCenterY));
+        const topPadding = 18;
+        const bottomPadding = 10;
+        const demoTop = Math.max(12, Math.round(endCenterY - topPadding));
+        const demoHeight = Math.max(74, Math.round((startCenterY - demoTop) + (handSize / 2) + bottomPadding));
+
+        tutorialGestureDemoEl.style.left = `${Math.round(centerX)}px`;
+        tutorialGestureDemoEl.style.top = `${demoTop}px`;
+        tutorialGestureDemoEl.style.width = "90px";
+        tutorialGestureDemoEl.style.height = `${demoHeight}px`;
+        tutorialGestureDemoEl.style.setProperty("--swipe-distance", `${swipeDistance}px`);
+      } else if (tutorialCoachStep === 1) {
+        tutorialGestureDemoEl.classList.add("horizontal");
+        const startCenterX = centerX;
+        const endCenterX = rightBoxRect.left - wrapRect.left + (rightBoxRect.width / 2);
+        const swipeDistance = Math.max(30, Math.round(endCenterX - startCenterX));
+        const demoTop = Math.max(12, Math.round(startCenterY - 45));
+        const demoWidth = Math.max(handSize + 8, Math.round(swipeDistance + handSize));
+
+        tutorialGestureDemoEl.style.left = `${Math.max(12, Math.round(startCenterX - (handSize / 2)))}px`;
+        tutorialGestureDemoEl.style.top = `${demoTop}px`;
+        tutorialGestureDemoEl.style.width = `${demoWidth}px`;
+        tutorialGestureDemoEl.style.height = "90px";
+        tutorialGestureDemoEl.style.setProperty("--swipe-distance", `${swipeDistance}px`);
+      } else {
+        if (tutorialCoachStep === 2) {
+          tutorialGestureDemoEl.classList.add("info-only");
+          const demoTop = Math.max(12, Math.round((boxRect.top - wrapRect.top) - 8));
+
+          tutorialGestureDemoEl.style.left = `${Math.max(12, Math.round((boxRect.left - wrapRect.left) - 8))}px`;
+          tutorialGestureDemoEl.style.top = `${demoTop}px`;
+          tutorialGestureDemoEl.style.width = `${Math.round(boxRect.width + 16)}px`;
+          tutorialGestureDemoEl.style.height = `${Math.round(boxRect.height + 16)}px`;
+          tutorialGestureDemoEl.style.setProperty("--swipe-distance", "0px");
+        } else {
+          tutorialGestureDemoEl.style.display = "none";
+        }
+      }
+
+      tutorialGestureCoachEl.hidden = false;
+      tutorialGestureCoachEl.setAttribute("aria-hidden", "false");
     }
 
     function updateBonusFrameSprites() {
@@ -2624,6 +3010,7 @@
       }
       if (name !== "game") {
         closePrecisionEdgePicker();
+        hideTutorialGestureCoach(false);
         gameBoardWrapEl.style.position = "";
         gameBoardWrapEl.style.left = "";
         gameBoardWrapEl.style.transform = "";
@@ -2636,7 +3023,10 @@
       if (name === "game") {
         layoutBoardBetweenHudAndBoosters();
         requestAnimationFrame(() => {
-          if (currentScreen === "game") layoutBoardBetweenHudAndBoosters();
+          if (currentScreen === "game") {
+            layoutBoardBetweenHudAndBoosters();
+            updateTutorialGestureCoach();
+          }
         });
         startBonusFrameAnimation();
         ensureMovingBonusCycle();
@@ -3914,6 +4304,8 @@
       gameBoardWrapEl.style.width = `${availableWidth}px`;
       gameBoardWrapEl.style.maxWidth = `${availableWidth}px`;
 
+      updateTutorialGestureCoach();
+
       return { availableWidth, availableHeight };
     }
 
@@ -4489,6 +4881,7 @@
     function completeTutorialStep() {
       gameOver = true;
       statusEl.textContent = "Tutorial complete. Great job - Level 1 is ready.";
+      hideTutorialGestureCoach(false);
       showEndModal("draw", "You learned the basics. Next, play Level 1 with objectives.");
       endTitleEl.textContent = "Tutorial Complete";
       endPrimaryAction = "start-level-1";
@@ -4788,6 +5181,7 @@
       } else if (player === HUMAN && boxesWon > 0) {
         playSfx(boxCompletedSfx);
       }
+      const tutorialText = advanceTutorialCoachOnMove(type, row, col, player, boxesWon);
       refreshBoardUI();
 
       if (hasMetObjectives(player)) {
@@ -4798,11 +5192,13 @@
       }
 
       if (finishIfNeeded()) return;
-      if (boxesWon === 0) {
+      if (boxesWon === 0 && !(tutorialActive && player === HUMAN && !tutorialGestureDismissed)) {
         currentPlayer = player === HUMAN ? AI : HUMAN;
       }
       const bonusText = boxesWon > 0 ? `${player === HUMAN ? "You" : "Agent"} completed ${boxesWon} box${boxesWon > 1 ? "es" : ""}.` : "";
-      const statusText = [movingBonusClaimText, bonusText].filter(Boolean).join(" ");
+      const statusText = tutorialText
+        ? [tutorialText, movingBonusClaimText].filter(Boolean).join(" ")
+        : [movingBonusClaimText, bonusText].filter(Boolean).join(" ");
       setStatus(statusText);
       maybeScheduleTurn();
     }
@@ -4918,6 +5314,8 @@
     function startTutorialLevel() {
       tutorialActive = true;
       tutorialCompleted = false;
+      tutorialGestureDismissed = false;
+      tutorialCoachStep = 0;
       closePrecisionEdgePicker();
       clearGesturePreview();
       gestureTouchActive = false;
