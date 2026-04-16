@@ -1806,7 +1806,43 @@
       overflow: hidden;
       background: rgba(37, 50, 56, 0.03);
       border: 1px solid rgba(37, 50, 56, 0.08);
-      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, filter 250ms ease-in-out;
+    }
+
+    .box.objective-intro-settle {
+      transition: transform 180ms ease, box-shadow 180ms ease, filter 250ms ease-in-out;
+    }
+
+    .box.objective-intro-color {
+      background: transparent;
+      perspective: 800px;
+    }
+
+    .objective-intro-cell {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(.25, .8, .3, 1);
+      will-change: transform;
+      pointer-events: none;
+    }
+
+    .box.objective-intro-color.objective-intro-flip .objective-intro-cell {
+      transform: rotateX(180deg);
+    }
+
+    .objective-intro-face {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      backface-visibility: hidden;
+      background: var(--objective-intro-color, rgba(220, 220, 220, 0.9));
+    }
+
+    .objective-intro-face.back {
+      background: var(--objective-intro-gray-color, rgba(176, 182, 188, 0.26));
+      transform: rotateX(180deg);
     }
 
     .box.objective-complete {
@@ -3094,6 +3130,14 @@
     let confettiRaf = null;
     let currentScreen = "intro";
     let infoRevealMask = [];
+    let objectiveIntroGrayMask = [];
+    let objectiveIntroActive = false;
+    let objectiveIntroToken = 0;
+    let objectiveIntroTimerIds = [];
+    let objectiveIntroSettling = false;
+    let objectiveIntroSettleTimerId = null;
+    let levelZoomAnimRafId = null;
+    let levelZoomAnimToken = 0;
     let bombUses = 0;
     let bombTouchActive = false;
     let bombGhostEl = null;
@@ -3155,6 +3199,13 @@
       "assets/bonus/4.png",
     ];
     const BONUS_ANIM_INTERVAL_MS = 250;
+    const OBJECTIVE_INTRO_FULL_COLOR_MS = 3000;
+    const OBJECTIVE_INTRO_ROW_DELAY_MS = 120;
+    const OBJECTIVE_INTRO_CELL_DELAY_MS = 25;
+    const OBJECTIVE_INTRO_FLIP_MS = 600;
+    const OBJECTIVE_INTRO_SETTLE_MS = 220;
+    const LEVEL_INTRO_FIT_PADDING = 0.9;
+    const LEVEL_POST_INTRO_ZOOM_MS = 560;
     const playerSwooshSfx = new Audio("sounds/player_swoosh.mp3");
     const agentSwooshSfx = new Audio("sounds/agent_swoosh.mp3");
     const objectiveSfx = new Audio("sound/objective.mp3");
@@ -3781,6 +3832,12 @@
         turnTimerId = null;
       }
       if (name !== "game") {
+        cancelLevelZoomAnimation();
+        clearObjectiveIntroTimers();
+        objectiveIntroToken += 1;
+        objectiveIntroActive = false;
+      }
+      if (name !== "game") {
         clearMovingBonusTimer();
         stopBonusFrameAnimation();
       }
@@ -4099,7 +4156,17 @@
       hiddenBoxColors = createHiddenColorsForSize(boxRows, boxCols);
       hiddenBoxGrayColors = createGrayMaskFromColors(hiddenBoxColors);
       hiddenBoxTokens = createHiddenTokensForSize(boxRows, boxCols);
+      cancelLevelZoomAnimation();
       infoRevealMask = make2D(boxRows, boxCols, false);
+      clearObjectiveIntroTimers();
+      if (objectiveIntroSettleTimerId) {
+        window.clearTimeout(objectiveIntroSettleTimerId);
+        objectiveIntroSettleTimerId = null;
+      }
+      objectiveIntroSettling = false;
+      objectiveIntroToken += 1;
+      objectiveIntroActive = false;
+      objectiveIntroGrayMask = make2D(boxRows, boxCols, false);
       bombUses = 0;
       aiFrozenTurns = 0;
       lastAgentMove = null;
@@ -4111,6 +4178,114 @@
       bonusAnimFrameIndex = 0;
       currentPlayer = HUMAN;
       gameOver = false;
+    }
+
+    function clearObjectiveIntroTimers() {
+      for (const timerId of objectiveIntroTimerIds) {
+        window.clearTimeout(timerId);
+      }
+      objectiveIntroTimerIds = [];
+    }
+
+    function isObjectiveIntroActive() {
+      return objectiveIntroActive && currentScreen === "game";
+    }
+
+    function clearObjectiveIntroFlipMarkup(boxEl) {
+      if (!boxEl) return;
+      const introCell = boxEl.querySelector(":scope > .objective-intro-cell");
+      if (introCell) introCell.remove();
+    }
+
+    function ensureObjectiveIntroFlipMarkup(boxEl) {
+      if (!boxEl) return null;
+      let introCell = boxEl.querySelector(":scope > .objective-intro-cell");
+      if (!introCell) {
+        introCell = document.createElement("div");
+        introCell.className = "objective-intro-cell";
+
+        const frontFace = document.createElement("div");
+        frontFace.className = "objective-intro-face front";
+
+        const backFace = document.createElement("div");
+        backFace.className = "objective-intro-face back";
+
+        introCell.appendChild(frontFace);
+        introCell.appendChild(backFace);
+        boxEl.appendChild(introCell);
+      }
+      return introCell;
+    }
+
+    function updateObjectiveIntroCellVisual(row, col) {
+      const boxEl = boardEl?.querySelector(`.box[data-row="${row}"][data-col="${col}"]`);
+      if (!boxEl) return;
+      boxEl.style.setProperty("--objective-intro-color", hiddenBoxColors[row]?.[col] || "rgba(220, 220, 220, 0.9)");
+      boxEl.style.setProperty("--objective-intro-gray-color", hiddenBoxGrayColors[row]?.[col] || "rgba(176, 182, 188, 0.26)");
+      boxEl.style.background = "transparent";
+      ensureObjectiveIntroFlipMarkup(boxEl);
+      boxEl.classList.add("objective-intro-color");
+      boxEl.classList.toggle("objective-intro-flip", objectiveIntroGrayMask[row]?.[col] === true);
+    }
+
+    function startObjectiveModeIntroCascade(options = {}) {
+      const tutorialTwoIntroAllowed = options.allowTutorialLevelTwo === true && tutorialActive && tutorialLevelIndex === 2;
+      const animateZoomAfterIntro = options.animateZoomAfterIntro !== false;
+      if ((gameModeEl.value !== "objective" && !tutorialTwoIntroAllowed) || gameOver || currentScreen !== "game") {
+        return false;
+      }
+
+      clearObjectiveIntroTimers();
+      if (objectiveIntroSettleTimerId) {
+        window.clearTimeout(objectiveIntroSettleTimerId);
+        objectiveIntroSettleTimerId = null;
+      }
+      objectiveIntroSettling = false;
+      const token = ++objectiveIntroToken;
+      objectiveIntroActive = true;
+      objectiveIntroGrayMask = make2D(boxRows, boxCols, false);
+      refreshBoardUI();
+      statusEl.textContent = "Memorize the level colors...";
+
+      let finalDelay = OBJECTIVE_INTRO_FULL_COLOR_MS;
+      for (let r = 0; r < boxRows; r += 1) {
+        for (let c = 0; c < boxCols; c += 1) {
+          const delay = OBJECTIVE_INTRO_FULL_COLOR_MS
+            + (r * OBJECTIVE_INTRO_ROW_DELAY_MS)
+            + (c * OBJECTIVE_INTRO_CELL_DELAY_MS)
+            + (Math.random() * 20);
+          finalDelay = Math.max(finalDelay, delay);
+          const timerId = window.setTimeout(() => {
+            if (token !== objectiveIntroToken || !objectiveIntroActive) return;
+            objectiveIntroGrayMask[r][c] = true;
+            updateObjectiveIntroCellVisual(r, c);
+          }, delay);
+          objectiveIntroTimerIds.push(timerId);
+        }
+      }
+
+      const endTimerId = window.setTimeout(() => {
+        if (token !== objectiveIntroToken || !objectiveIntroActive) return;
+        objectiveIntroActive = false;
+        objectiveIntroSettling = true;
+        clearObjectiveIntroTimers();
+        const endStatus = typeof options.endStatus === "string" ? options.endStatus : "Colors hidden. Complete the objectives.";
+        setStatus(endStatus);
+        refreshBoardUI();
+        if (objectiveIntroSettleTimerId) window.clearTimeout(objectiveIntroSettleTimerId);
+        objectiveIntroSettleTimerId = window.setTimeout(() => {
+          objectiveIntroSettling = false;
+          objectiveIntroSettleTimerId = null;
+          refreshBoardUI();
+        }, OBJECTIVE_INTRO_SETTLE_MS);
+        if (animateZoomAfterIntro) {
+          animateBoardZoomToHudFill();
+        }
+        maybeScheduleTurn();
+      }, Math.ceil(finalDelay) + OBJECTIVE_INTRO_FLIP_MS + 40);
+      objectiveIntroTimerIds.push(endTimerId);
+
+      return true;
     }
 
     function updateEnergyUI() {
@@ -4693,10 +4868,12 @@
         buildBoardUI();
         refreshBoardUI();
         showScreen("game");
-          resetZoomToBoardFit();
+        setBoardZoomForIntroPreview();
         setStatus(statusMessage);
         updateGameDebugUI("prepared");
-        maybeScheduleTurn();
+        if (!startObjectiveModeIntroCascade()) {
+          maybeScheduleTurn();
+        }
 
         // Sync the hidden config screen after the board is live; failures here must not break level start.
         try {
@@ -4996,10 +5173,11 @@
       return Math.max(min, Math.min(max, value));
     }
 
-    function normalizeZoomPercent(nextZoom) {
-      return Number.isFinite(nextZoom)
-        ? clamp(Math.round(nextZoom / ZOOM_STEP_PERCENT) * ZOOM_STEP_PERCENT, ZOOM_MIN_PERCENT, ZOOM_MAX_PERCENT)
-        : 75;
+    function normalizeZoomPercent(nextZoom, snapToStep = true) {
+      if (!Number.isFinite(nextZoom)) return 75;
+      const clamped = clamp(nextZoom, ZOOM_MIN_PERCENT, ZOOM_MAX_PERCENT);
+      if (!snapToStep) return clamped;
+      return clamp(Math.round(clamped / ZOOM_STEP_PERCENT) * ZOOM_STEP_PERCENT, ZOOM_MIN_PERCENT, ZOOM_MAX_PERCENT);
     }
 
     function getZoomLabelText() {
@@ -5016,15 +5194,17 @@
       if (gameZoomValueEl) gameZoomValueEl.textContent = label;
     }
 
-    function setZoomPercents(nextZoomX, nextZoomY) {
-      zoomPercentX = normalizeZoomPercent(nextZoomX);
-      zoomPercentY = normalizeZoomPercent(nextZoomY);
+    function setZoomPercents(nextZoomX, nextZoomY, options = {}) {
+      const snapToStep = options.snapToStep !== false;
+      zoomPercentX = normalizeZoomPercent(nextZoomX, snapToStep);
+      zoomPercentY = normalizeZoomPercent(nextZoomY, snapToStep);
       applyBoardSizing();
     }
 
-    function setZoomPercent(nextZoom) {
-      const normalized = normalizeZoomPercent(nextZoom);
-      setZoomPercents(normalized, normalized);
+    function setZoomPercent(nextZoom, options = {}) {
+      const snapToStep = options.snapToStep !== false;
+      const normalized = normalizeZoomPercent(nextZoom, snapToStep);
+      setZoomPercents(normalized, normalized, { snapToStep });
     }
 
     function getTouchSpan(touchA, touchB) {
@@ -5148,19 +5328,86 @@
       }
     }
 
-      function resetZoomToBoardFit() {
-        setZoomPercent(100);
-        layoutBoardBetweenHudAndBoosters();
-        fitBoardToHudGap({ strict: true, independentAxes: true });
-        maximizeBoardZoomToHudGap("x");
-        maximizeBoardZoomToHudGap("y");
+    function getSquareFitZoomPercent(padding = 1) {
+      const layout = layoutBoardBetweenHudAndBoosters();
+      if (!layout || !boardEl) return zoomPercent;
+      const { availableWidth, availableHeight } = layout;
+      const contentWidth = boardEl.scrollWidth;
+      const contentHeight = boardEl.scrollHeight;
+      if (!contentWidth || !contentHeight) return zoomPercent;
+
+      const fitRatio = Math.min(availableWidth / contentWidth, availableHeight / contentHeight);
+      if (!Number.isFinite(fitRatio) || fitRatio <= 0) return zoomPercent;
+
+      const safePadding = clamp(Number(padding) || 1, 0.6, 1);
+      return normalizeZoomPercent(zoomPercent * fitRatio * safePadding, false);
+    }
+
+    function cancelLevelZoomAnimation() {
+      levelZoomAnimToken += 1;
+      if (levelZoomAnimRafId !== null) {
+        window.cancelAnimationFrame(levelZoomAnimRafId);
+        levelZoomAnimRafId = null;
       }
+    }
+
+    function resetZoomToBoardFit() {
+      cancelLevelZoomAnimation();
+      setZoomPercent(100, { snapToStep: false });
+      layoutBoardBetweenHudAndBoosters();
+      const fitZoom = getSquareFitZoomPercent(1);
+      setZoomPercent(fitZoom, { snapToStep: false });
+      layoutBoardBetweenHudAndBoosters();
+    }
+
+    function setBoardZoomForIntroPreview() {
+      cancelLevelZoomAnimation();
+      setZoomPercent(100, { snapToStep: false });
+      layoutBoardBetweenHudAndBoosters();
+      const previewZoom = getSquareFitZoomPercent(LEVEL_INTRO_FIT_PADDING);
+      setZoomPercent(previewZoom, { snapToStep: false });
+      layoutBoardBetweenHudAndBoosters();
+    }
+
+    function animateBoardZoomToHudFill(durationMs = LEVEL_POST_INTRO_ZOOM_MS) {
+      cancelLevelZoomAnimation();
+      if (currentScreen !== "game" || !boardEl) return;
+
+      const startZoom = zoomPercent;
+      const targetZoom = getSquareFitZoomPercent(1);
+      if (!Number.isFinite(targetZoom)) return;
+      if (Math.abs(targetZoom - startZoom) < 0.3) {
+        setZoomPercent(targetZoom, { snapToStep: false });
+        return;
+      }
+
+      const token = ++levelZoomAnimToken;
+      const startTime = performance.now();
+      const easeOut = (t) => 1 - ((1 - t) ** 3);
+
+      const tick = (now) => {
+        if (token !== levelZoomAnimToken) return;
+        const progress = clamp((now - startTime) / Math.max(120, durationMs), 0, 1);
+        const eased = easeOut(progress);
+        const nextZoom = startZoom + ((targetZoom - startZoom) * eased);
+        setZoomPercent(nextZoom, { snapToStep: false });
+        if (progress < 1) {
+          levelZoomAnimRafId = window.requestAnimationFrame(tick);
+        } else {
+          levelZoomAnimRafId = null;
+          setZoomPercent(targetZoom, { snapToStep: false });
+          layoutBoardBetweenHudAndBoosters();
+        }
+      };
+
+      levelZoomAnimRafId = window.requestAnimationFrame(tick);
+    }
 
     function applyBoardSizing() {
       const parsedEdge = Number(edgeSizeEl.value);
       edgePx = Number.isFinite(parsedEdge) ? clamp(Math.floor(parsedEdge), 8, 60) : 36;
-      zoomPercentX = normalizeZoomPercent(zoomPercentX);
-      zoomPercentY = normalizeZoomPercent(zoomPercentY);
+      zoomPercentX = normalizeZoomPercent(zoomPercentX, false);
+      zoomPercentY = normalizeZoomPercent(zoomPercentY, false);
 
       edgeSizeEl.value = String(edgePx);
       syncZoomControlsFromState();
@@ -5770,6 +6017,10 @@
 
     function setStatus(extra = "") {
       if (gameOver) return;
+      if (isObjectiveIntroActive()) {
+        statusEl.textContent = "Memorize the level colors...";
+        return;
+      }
       let base;
       if (currentPlayer === HUMAN) {
         base = autoPlayEnabled ? "Auto player is choosing a move..." : "Your turn.";
@@ -5890,7 +6141,11 @@
       for (const boxEl of boardEl.querySelectorAll(".box")) {
         const row = Number(boxEl.dataset.row);
         const col = Number(boxEl.dataset.col);
-        boxEl.classList.remove("human", "ai", "revealed", "info-revealed", "objective-complete", "energy-bonus");
+        boxEl.classList.remove("human", "ai", "revealed", "info-revealed", "objective-complete", "energy-bonus", "objective-intro-color", "objective-intro-flip", "objective-intro-settle");
+        if (objectiveIntroSettling) boxEl.classList.add("objective-intro-settle");
+        boxEl.style.removeProperty("--objective-intro-color");
+        boxEl.style.removeProperty("--objective-intro-gray-color");
+        clearObjectiveIntroFlipMarkup(boxEl);
         const priorBonusOverlay = boxEl.querySelector(".bonus-sprite-wrap");
         if (priorBonusOverlay) priorBonusOverlay.remove();
         const owner = boxes[row][col];
@@ -5902,12 +6157,23 @@
             boxEl.classList.add("objective-complete");
           }
         } else {
-          const informed = infoRevealMask[row]?.[col] === true;
-          if (informed) {
-            boxEl.classList.add("info-revealed");
-            boxEl.style.background = hiddenBoxColors[row]?.[col] || "rgba(220, 220, 220, 0.9)";
+          if (isObjectiveIntroActive()) {
+            boxEl.style.background = "transparent";
+            boxEl.style.setProperty("--objective-intro-color", hiddenBoxColors[row]?.[col] || "rgba(220, 220, 220, 0.9)");
+            boxEl.style.setProperty("--objective-intro-gray-color", hiddenBoxGrayColors[row]?.[col] || "rgba(176, 182, 188, 0.26)");
+            ensureObjectiveIntroFlipMarkup(boxEl);
+            boxEl.classList.add("objective-intro-color");
+            if (objectiveIntroGrayMask[row]?.[col] === true) {
+              boxEl.classList.add("objective-intro-flip");
+            }
           } else {
-            boxEl.style.background = hiddenBoxGrayColors[row]?.[col] || "rgba(176, 182, 188, 0.26)";
+            const informed = infoRevealMask[row]?.[col] === true;
+            if (informed) {
+              boxEl.classList.add("info-revealed");
+              boxEl.style.background = hiddenBoxColors[row]?.[col] || "rgba(220, 220, 220, 0.9)";
+            } else {
+              boxEl.style.background = hiddenBoxGrayColors[row]?.[col] || "rgba(176, 182, 188, 0.26)";
+            }
           }
           if (isMovingBonusUnlocked() && movingBonusBox && movingBonusBox.row === row && movingBonusBox.col === col) {
             boxEl.classList.add("energy-bonus");
@@ -6048,7 +6314,7 @@
     }
 
     function onHumanMove(event) {
-      if (gameOver || currentPlayer !== HUMAN || autoPlayEnabled) return;
+      if (gameOver || currentPlayer !== HUMAN || autoPlayEnabled || isObjectiveIntroActive()) return;
       if (Date.now() < suppressEdgeClickUntil) return;
       const edge = event.currentTarget;
       const type = edge.dataset.type;
@@ -6089,6 +6355,10 @@
         turnTimerId = null;
       }
       if (gameOver || currentScreen !== "game") return;
+      if (isObjectiveIntroActive()) {
+        setStatus();
+        return;
+      }
 
       if (currentPlayer === AI) {
         if (aiFrozenTurns > 0) {
@@ -6154,8 +6424,14 @@
       refreshBoardUI();
       setStatus();
       showScreen("game");
-      fitBoardToHudGap();
-      maybeScheduleTurn();
+      if (gameModeEl.value === "objective") {
+        setBoardZoomForIntroPreview();
+      } else {
+        resetZoomToBoardFit();
+      }
+      if (!startObjectiveModeIntroCascade()) {
+        maybeScheduleTurn();
+      }
     }
 
     function startTutorialLevel() {
@@ -6241,7 +6517,7 @@
       buildBoardUI();
       refreshBoardUI();
       showScreen("game");
-      resetZoomToBoardFit();
+      setBoardZoomForIntroPreview();
       setStatus("Tutorial 2: collect Energy by completing boxes, then use Bomb once.");
       updateGameDebugUI("tutorial-2");
 
@@ -6253,7 +6529,12 @@
         console.warn("Tutorial 2 preview sync failed:", error);
       }
 
-      maybeScheduleTurn();
+      if (!startObjectiveModeIntroCascade({
+        allowTutorialLevelTwo: true,
+        endStatus: "Tutorial 2: collect Energy by completing boxes, then use Bomb once.",
+      })) {
+        maybeScheduleTurn();
+      }
     }
 
     newGameEl.addEventListener("click", newGame);
@@ -6409,7 +6690,7 @@
       pinchAxis = null;
     }, { passive: true });
     boardEl.addEventListener("touchstart", (event) => {
-      if (currentScreen !== "game" || gameOver || currentPlayer !== HUMAN || autoPlayEnabled || bombTouchActive) return;
+      if (currentScreen !== "game" || gameOver || currentPlayer !== HUMAN || autoPlayEnabled || bombTouchActive || isObjectiveIntroActive()) return;
       if (event.touches.length !== 1) return;
 
       const touch = event.touches[0];
