@@ -18,6 +18,18 @@
       --freeze-overlay-image: url("assets/red_icecube.png");
       --shadow: 0 10px 30px rgba(37, 50, 56, 0.16);
       --radius: 16px;
+      --home-cta-bottom-min: 24px;
+      --home-cta-bottom-fluid: 7vh;
+      --home-cta-bottom-max: 66px;
+      --home-cta-width: 420px;
+      --home-play-min-width: 310px;
+      --home-play-padding-y: 16px;
+      --home-play-padding-x: 28px;
+      --home-play-radius: 28px;
+      --home-play-font-min: 1.25rem;
+      --home-play-font-fluid: 4.8vw;
+      --home-play-font-max: 2rem;
+      --home-top-padding: 10px;
     }
 
     * {
@@ -58,52 +70,376 @@
     .screen-intro {
       min-height: min(88vh, 900px);
       display: none;
-      place-items: center;
-      padding: 28px;
-      background:
-        radial-gradient(circle at 16% 18%, rgba(20, 99, 93, 0.11), transparent 36%),
-        radial-gradient(circle at 84% 82%, rgba(177, 58, 45, 0.12), transparent 38%),
-        linear-gradient(145deg, rgba(255, 253, 248, 0.98), rgba(242, 247, 244, 0.96));
+      position: relative;
+      background-image: url("assets/home_screen.png"), linear-gradient(180deg, #6aa3ff 0%, #90dcff 40%, #f7a35f 100%);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overflow: hidden;
     }
 
     .screen-intro.active {
-      display: grid;
+      display: block;
     }
 
-    .intro-card {
-      width: min(520px, 100%);
-      border-radius: 24px;
-      padding: 30px 28px;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(37, 50, 56, 0.12);
-      box-shadow: 0 18px 42px rgba(37, 50, 56, 0.14);
-      text-align: center;
+    .home-screen-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 58%, rgba(0, 0, 0, 0.24) 100%);
+      pointer-events: none;
+    }
+
+    .home-top-bar {
+      position: absolute;
+      left: 50%;
+      top: var(--home-top-padding);
+      transform: translateX(-50%);
+      width: min(97%, 860px);
+      z-index: 3;
+      padding: 10px 14px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ff5a7a, #e63b5d);
+      border: 1px solid rgba(255, 183, 197, 0.5);
+      box-shadow: 0 9px 20px rgba(73, 13, 28, 0.3), inset 0 -2px 0 rgba(111, 17, 37, 0.35);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .home-left-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .home-avatar-wrap {
+      width: clamp(42px, 6vw, 48px);
+      height: clamp(42px, 6vw, 48px);
+      border-radius: 50%;
+      padding: 0;
+      background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+      box-shadow: 0 4px 10px rgba(23, 18, 10, 0.24);
+      border: 3px solid rgba(255, 255, 255, 0.94);
       display: grid;
-      gap: 16px;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+
+    .home-avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 0;
+      background: rgba(255, 255, 255, 0.58);
+    }
+
+    .home-counters {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .home-counter-pill {
+      min-width: clamp(84px, 14vw, 132px);
+      height: clamp(34px, 5.2vw, 40px);
+      border-radius: 20px;
+      padding: 0 12px;
+      background: linear-gradient(180deg, #ffe2b8, #ffc77a);
+      border: 0;
+      color: #5a3b00;
+      font-size: clamp(0.82rem, 1.7vw, 0.96rem);
+      font-weight: 800;
+      letter-spacing: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+      white-space: nowrap;
+    }
+
+    .home-counter-icon {
+      font-size: 1.02em;
+      line-height: 1;
+    }
+
+    .home-counter-plus {
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 0;
+      background: #39d353;
+      color: #fff;
+      font-weight: 900;
+      font-size: 0.92rem;
+      line-height: 1;
+      display: inline-grid;
+      place-items: center;
+      box-shadow: 0 2px 0 #1f8f35;
+      padding: 0;
+      cursor: default;
+    }
+
+    .home-settings {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.16);
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      box-shadow: 0 3px 8px rgba(58, 9, 21, 0.24);
+    }
+
+    .home-settings img {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+      opacity: 0.95;
+    }
+
+    .home-level-path {
+      position: absolute;
+      left: 50%;
+      top: 64px;
+      width: 166px;
+      height: 488px;
+      transform: translateX(-50%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .home-level-line {
+      position: absolute;
+      left: 50%;
+      top: 6px;
+      width: 14px;
+      height: 430px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      border: 3px solid #000;
+      background: linear-gradient(180deg, #bcbf79 0%, #ffe65e 40%, #f7c213 100%);
+    }
+
+    .home-level-node {
+      position: absolute;
+      left: 50%;
+      width: 108px;
+      height: 100px;
+      transform: translateX(-50%);
+      display: grid;
+      place-items: center;
+    }
+
+    .home-level-node::before {
+      content: "";
+      position: absolute;
+      width: 96px;
+      height: 90px;
+      background: url("assets/homescreen/diamond.png") center / contain no-repeat;
+    }
+
+    .home-level-num {
+      position: relative;
+      z-index: 2;
+      font-family: "Avenir Next", "Futura", sans-serif;
+      font-size: 60px;
+      line-height: 1;
+      font-weight: 900;
+      color: #fff;
+      text-shadow:
+        -2px 0 #000,
+        2px 0 #000,
+        0 -2px #000,
+        0 2px #000;
+    }
+
+    .home-level-node.is-past {
+      opacity: 0.46;
+    }
+
+    .home-level-node.n4 {
+      top: -44px;
+    }
+
+    .home-level-node.n3 {
+      top: 82px;
+    }
+
+    .home-level-node.n2 {
+      top: 230px;
+    }
+
+    .home-level-node.n1 {
+      top: 380px;
+    }
+
+    .home-level-node.n1::before {
+      filter: drop-shadow(0 0 8px rgba(157, 251, 255, 0.92));
+    }
+
+    .home-level-node.n1::after {
+      content: "\25BC";
+      position: absolute;
+      top: -16px;
+      z-index: 3;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.92);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+      animation: home-level-bounce 0.9s ease-in-out infinite alternate;
+    }
+
+    @keyframes home-level-bounce {
+      from {
+        transform: translateY(0);
+      }
+      to {
+        transform: translateY(4px);
+      }
+    }
+
+    .home-no-ads {
+      position: absolute;
+      right: 12px;
+      top: 286px;
+      width: 92px;
+      z-index: 3;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      cursor: default;
+    }
+
+    .home-no-ads img {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 6px 10px rgba(14, 17, 36, 0.42));
+    }
+
+    .home-screen-cta {
+      position: absolute;
+      left: 50%;
+      bottom: clamp(var(--home-cta-bottom-min), var(--home-cta-bottom-fluid), var(--home-cta-bottom-max));
+      transform: translateX(-50%);
+      display: grid;
+      gap: 10px;
       justify-items: center;
+      width: min(92%, var(--home-cta-width));
+      z-index: 2;
     }
 
-    .intro-card h1 {
-      margin: 0;
-      font-size: clamp(1.8rem, 3vw, 2.4rem);
-      letter-spacing: 0.02em;
+    @media (max-width: 620px) {
+      .home-top-bar {
+        width: min(98.6%, 860px);
+        gap: 6px;
+        padding: 8px 10px;
+      }
+
+      .home-counters {
+        gap: 6px;
+      }
+
+      .home-counter-pill {
+        min-width: clamp(80px, 28vw, 118px);
+        padding: 0 9px;
+      }
+
+      .home-settings {
+        width: 30px;
+        height: 30px;
+      }
+
+      .home-settings img {
+        width: 15px;
+        height: 15px;
+      }
+
+      .home-level-path {
+        top: 72px;
+        width: 140px;
+        height: 420px;
+      }
+
+      .home-level-line {
+        height: 372px;
+      }
+
+      .home-level-node {
+        width: 96px;
+        height: 90px;
+      }
+
+      .home-level-node::before {
+        width: 84px;
+        height: 78px;
+      }
+
+      .home-level-num {
+        font-size: 52px;
+      }
+
+      .home-level-node.n4 {
+        top: -38px;
+      }
+
+      .home-level-node.n3 {
+        top: 68px;
+      }
+
+      .home-level-node.n2 {
+        top: 194px;
+      }
+
+      .home-level-node.n1 {
+        top: 320px;
+      }
+
+      .home-no-ads {
+        right: 6px;
+        top: 246px;
+        width: 82px;
+      }
     }
 
-    .intro-card p {
+    .home-screen-caption {
       margin: 0;
-      color: var(--muted);
-      line-height: 1.5;
-      max-width: 36ch;
+      color: #fff7d8;
+      font-size: clamp(0.86rem, 2vw, 1rem);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-shadow: 0 2px 9px rgba(24, 26, 40, 0.46);
+      text-align: center;
     }
 
     .intro-start {
-      min-width: 190px;
-      padding: 14px 22px;
-      border-radius: 999px;
-      font-size: 1rem;
-      font-weight: 700;
-      box-shadow: 0 12px 28px rgba(20, 99, 93, 0.22);
-      background: linear-gradient(135deg, #14635d, #2b8b80);
+      min-width: min(88vw, var(--home-play-min-width));
+      padding: var(--home-play-padding-y) var(--home-play-padding-x);
+      border-radius: var(--home-play-radius);
+      border: 2px solid rgba(109, 163, 9, 0.95);
+      font-size: clamp(var(--home-play-font-min), var(--home-play-font-fluid), var(--home-play-font-max));
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      color: #f3ffd5;
+      text-shadow: 0 2px 0 rgba(44, 76, 9, 0.58);
+      background: linear-gradient(180deg, #90f22d 0%, #65cd1f 46%, #4ca612 100%);
+      box-shadow: 0 7px 0 #428d11, 0 14px 28px rgba(14, 22, 10, 0.36);
+      transition: transform 130ms ease, box-shadow 130ms ease;
+    }
+
+    .intro-start:hover {
+      transform: translateY(-1px);
+    }
+
+    .intro-start:active {
+      transform: translateY(4px);
+      box-shadow: 0 3px 0 #428d11, 0 8px 18px rgba(14, 22, 10, 0.34);
     }
 
     .top {
@@ -2244,11 +2580,42 @@
 </head>
 <body>
   <section class="shell">
-    <section id="intro-screen" class="screen screen-intro active" aria-label="Start screen">
-      <div class="intro-card">
-        <h1>Hello Player!</h1>
-        <p>Start with a quick Classic 5x5 tutorial to learn the rules, then continue to Level 1.</p>
-        <button id="intro-start" type="button" class="intro-start">Start Tutorial</button>
+    <section id="intro-screen" class="screen screen-intro active" aria-label="Home screen">
+      <div class="home-screen-overlay" aria-hidden="true"></div>
+      <header class="home-top-bar" aria-label="Profile and resources">
+        <div class="home-left-group">
+          <div class="home-avatar-wrap">
+            <img src="assets/player.png" alt="Player avatar" class="home-avatar-img" draggable="false" />
+          </div>
+          <div class="home-counters">
+            <div class="home-counter-pill" role="status" aria-label="Lives">
+              <span class="home-counter-icon" aria-hidden="true">❤️</span>
+              <span id="home-lives-count">5 Full</span>
+            </div>
+            <div class="home-counter-pill" role="status" aria-label="Coins">
+              <span class="home-counter-icon" aria-hidden="true">💰</span>
+              <span id="home-coins-count">205</span>
+              <span class="home-counter-plus" aria-hidden="true">+</span>
+            </div>
+          </div>
+        </div>
+        <span class="home-settings" aria-label="Settings" role="img">
+          <img src="assets/gear.png" alt="" draggable="false" />
+        </span>
+      </header>
+      <div class="home-level-path" aria-hidden="true">
+        <div class="home-level-line"></div>
+        <div class="home-level-node n4 is-past"><span class="home-level-num">4</span></div>
+        <div class="home-level-node n3"><span class="home-level-num">3</span></div>
+        <div class="home-level-node n2"><span class="home-level-num">2</span></div>
+        <div class="home-level-node n1"><span class="home-level-num">1</span></div>
+      </div>
+      <button class="home-no-ads" type="button" aria-label="No Ads" tabindex="-1">
+        <img src="assets/homescreen/no_ads.png" alt="No Ads" draggable="false" />
+      </button>
+      <div class="home-screen-cta">
+        <p class="home-screen-caption">Ready for the tutorial and campaign?</p>
+        <button id="intro-start" type="button" class="intro-start">Play</button>
       </div>
     </section>
 
