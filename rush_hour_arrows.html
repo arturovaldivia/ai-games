@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Rush Hour Arrows</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet" />
+	<style>
+		:root {
+			--bg-1: #ea87c7;
+			--bg-2: #d861ad;
+			--panel: #fbe9f7;
+			--panel-line: #c186af;
+			--text: #5b2550;
+			--cell: 58px;
+			--board-size: min(80vmin, 620px);
+			--shadow: 0 12px 26px rgba(104, 23, 69, 0.2);
+		}
+
+		* {
+			box-sizing: border-box;
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			min-height: 100dvh;
+			font-family: "Baloo 2", cursive;
+			color: var(--text);
+			background:
+				radial-gradient(circle at 20% 18%, #ffd5ef 0 12%, transparent 13%),
+				radial-gradient(circle at 80% 82%, #ffb8e4 0 10%, transparent 11%),
+				linear-gradient(150deg, var(--bg-1), var(--bg-2));
+			display: grid;
+			place-items: center;
+			padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+		}
+
+		.app {
+			width: min(980px, 100%);
+			display: grid;
+			grid-template-columns: auto minmax(220px, 280px);
+			gap: 14px;
+			align-items: start;
+		}
+
+		.board-shell {
+			background: linear-gradient(180deg, #efbfdc, #e5aad0);
+			border: 4px solid #9f5f89;
+			border-radius: 28px;
+			padding: 10px;
+			box-shadow: var(--shadow);
+			position: relative;
+		}
+
+		.board {
+			width: var(--board-size);
+			height: var(--board-size);
+			border-radius: 22px;
+			border: 3px solid #bb79a8;
+			background:
+				linear-gradient(90deg, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.04) 50%),
+				linear-gradient(0deg, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.04) 50%),
+				linear-gradient(180deg, #f7deee, #f2d4e7);
+			background-size: calc(var(--cell) / 3) calc(var(--cell) / 3);
+			position: relative;
+			overflow: hidden;
+			touch-action: none;
+			box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.42), inset 0 -3px 0 rgba(159, 97, 141, 0.18);
+		}
+
+		.piece {
+			position: absolute;
+			user-select: none;
+			cursor: grab;
+			transition: transform 120ms ease;
+			filter: drop-shadow(0 4px 5px rgba(74, 32, 52, 0.28));
+		}
+
+		.piece.dragging {
+			transition: none;
+			cursor: grabbing;
+			z-index: 10;
+		}
+
+		.piece.flying-out {
+			transition: transform 320ms cubic-bezier(0.2, 0.7, 0.1, 1), opacity 320ms ease;
+			pointer-events: none;
+			z-index: 12;
+		}
+
+		.piece.blocked-glow {
+			animation: blockedPulse 820ms ease 1;
+			z-index: 11;
+		}
+
+		.piece.blocked-glow svg {
+			filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 12px rgba(255, 235, 59, 0.95));
+		}
+
+		@keyframes blockedPulse {
+			0% { transform: scale(1); }
+			30% { transform: scale(1.08); }
+			100% { transform: scale(1); }
+		}
+
+		.piece[data-selected="true"] {
+			transform: scale(1.06);
+			z-index: 3;
+			filter: drop-shadow(0 0 0.5rem rgba(255, 255, 255, 0.75)) drop-shadow(0 5px 8px rgba(0, 0, 0, 0.32));
+		}
+
+		.shaft {
+			position: absolute;
+			border-radius: 999px;
+			background: var(--color);
+			box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.45), inset 0 -3px 0 rgba(0, 0, 0, 0.12);
+		}
+
+		.head {
+			position: absolute;
+			width: 0;
+			height: 0;
+			border-style: solid;
+			filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.35));
+		}
+
+		.panel {
+			background: var(--panel);
+			border: 3px solid #d08eb7;
+			border-radius: 18px;
+			box-shadow: var(--shadow);
+			padding: 12px;
+			display: grid;
+			gap: 10px;
+		}
+
+		h1 {
+			margin: 0;
+			font-size: 1.8rem;
+			line-height: 1;
+			color: #8d2f67;
+		}
+
+		.subtitle {
+			margin: 0;
+			font-size: 0.95rem;
+			line-height: 1.25;
+			color: #76305b;
+		}
+
+		.stats {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 8px;
+		}
+
+		.chip {
+			background: #fff2fa;
+			border: 2px solid #e0a8cd;
+			border-radius: 12px;
+			padding: 6px 10px;
+			text-align: center;
+			font-weight: 700;
+			font-size: 0.95rem;
+		}
+
+		.controls {
+			display: grid;
+			gap: 8px;
+		}
+
+		button {
+			border: 0;
+			border-radius: 12px;
+			padding: 12px 14px;
+			min-height: 48px;
+			font-family: inherit;
+			font-size: 1.02rem;
+			font-weight: 700;
+			cursor: pointer;
+			transition: transform 120ms ease, filter 120ms ease;
+			color: #fff;
+			background: linear-gradient(180deg, #ff679e, #eb3e84);
+			box-shadow: 0 4px 0 #af2b62;
+		}
+
+		button:hover {
+			filter: brightness(1.06);
+		}
+
+		button:active {
+			transform: translateY(2px);
+			box-shadow: 0 2px 0 #af2b62;
+		}
+
+		.minor {
+			background: linear-gradient(180deg, #8ab7ff, #4a88ef);
+			box-shadow: 0 4px 0 #2e5ea8;
+		}
+
+		.hint {
+			margin: 0;
+			font-size: 0.89rem;
+			line-height: 1.22;
+			color: #6e3b58;
+		}
+
+		.status {
+			min-height: 2.3em;
+			margin: 0;
+			font-size: 1rem;
+			font-weight: 700;
+			color: #8d2f67;
+		}
+
+		.mobile-only {
+			display: none;
+		}
+
+		@media (max-width: 920px) {
+			.app {
+				grid-template-columns: 1fr;
+				justify-items: center;
+			}
+
+			:root {
+				--board-size: min(92vmin, 560px);
+			}
+
+			.panel {
+				width: min(560px, 100%);
+				gap: 8px;
+			}
+		}
+
+		@media (max-width: 640px) {
+			body {
+				place-items: start center;
+			}
+
+			.app {
+				width: 100%;
+				gap: 10px;
+			}
+
+			.board-shell {
+				width: 100%;
+				display: grid;
+				place-items: center;
+				padding: 8px;
+				border-radius: 24px;
+			}
+
+			:root {
+				--board-size: min(96vw, 520px);
+			}
+
+			.panel {
+				width: 100%;
+				padding: 10px;
+				border-radius: 16px;
+			}
+
+			h1 {
+				font-size: 1.45rem;
+			}
+
+			.subtitle {
+				font-size: 0.9rem;
+			}
+
+			.stats {
+				grid-template-columns: 1fr 1fr;
+				gap: 6px;
+			}
+
+			.chip {
+				padding: 7px 8px;
+				font-size: 0.9rem;
+			}
+
+			.controls {
+				grid-template-columns: 1fr 1fr;
+				gap: 8px;
+			}
+
+			button {
+				font-size: 0.95rem;
+				min-height: 52px;
+				padding: 10px;
+			}
+
+			.status {
+				font-size: 0.95rem;
+				min-height: 2em;
+			}
+
+			.hint.desktop-only {
+				display: none;
+			}
+
+			.mobile-only {
+				display: block;
+			}
+		}
+
+		@media (max-width: 640px) and (orientation: portrait) {
+			:root {
+				--board-size: min(94vw, calc(100dvh - 250px));
+			}
+
+			body {
+				padding-bottom: calc(210px + env(safe-area-inset-bottom));
+			}
+
+			.app {
+				gap: 8px;
+			}
+
+			.board-shell {
+				margin-bottom: 172px;
+			}
+
+			.panel {
+				position: fixed;
+				left: 8px;
+				right: 8px;
+				bottom: calc(8px + env(safe-area-inset-bottom));
+				z-index: 40;
+				padding: 10px;
+				gap: 6px;
+				background: rgba(251, 233, 247, 0.94);
+				backdrop-filter: blur(6px);
+				box-shadow: 0 8px 20px rgba(93, 31, 68, 0.28);
+			}
+
+			.panel h1,
+			.panel .subtitle,
+			.panel .hint {
+				display: none;
+			}
+
+			.status {
+				order: 1;
+				font-size: 0.9rem;
+				min-height: 1.4em;
+			}
+
+			.stats {
+				order: 2;
+				gap: 6px;
+			}
+
+			.chip {
+				padding: 6px 8px;
+				font-size: 0.86rem;
+			}
+
+			.controls {
+				order: 3;
+				grid-template-columns: repeat(4, minmax(0, 1fr));
+				gap: 6px;
+			}
+
+			button {
+				min-height: 46px;
+				padding: 8px 6px;
+				font-size: 0.8rem;
+				line-height: 1.05;
+			}
+		}
+	</style>
+</head>
+<body>
+	<main class="app">
+		<section class="board-shell">
+			<div id="board" class="board" aria-label="Rush Hour Arrows board" role="application"></div>
+		</section>
+
+		<aside class="panel">
+			<h1>Rush Hour Arrows</h1>
+			<p class="subtitle">Move each arrow like a Rush Hour piece. An arrow exits only when the path in front of its tip is totally clear to the edge.</p>
+
+			<div class="stats">
+				<div class="chip">Moves: <span id="moves">0</span></div>
+				<div class="chip">Left: <span id="left">0</span></div>
+			</div>
+
+			<div class="controls">
+				<button id="backBtn" type="button">Move Back</button>
+				<button id="forwardBtn" type="button">Move Forward</button>
+				<button id="exitBtn" type="button">Exit Arrow</button>
+				<button id="resetBtn" class="minor" type="button">Reset Level</button>
+			</div>
+
+			<p class="status" id="status">Select an arrow to start.</p>
+			<p class="hint desktop-only">Keyboard: arrows move selected piece, Space tries to exit it.</p>
+			<p class="hint mobile-only">Touch tip: drag arrows with one finger. Double tap to attempt fly-out.</p>
+			<p class="hint">Tip: an arrow exits only in the direction of its tip and only with a clear path.</p>
+		</aside>
+	</main>
+
+	<script>
+		const GRID = 10;
+
+		const INITIAL_LEVEL = [
+			{ id: "a", color: "#ffeb3b", dir: "left", cells: [{ r: 1, c: 3 }, { r: 0, c: 3 }, { r: 0, c: 2 }, { r: 0, c: 1 }] },
+			{ id: "b", color: "#ff5466", dir: "left", cells: [{ r: 1, c: 6 }, { r: 0, c: 6 }, { r: 0, c: 5 }, { r: 0, c: 4 }] },
+			{ id: "c", color: "#ff5466", dir: "up", cells: [{ r: 1, c: 7 }, { r: 0, c: 7 }] },
+			{ id: "d", color: "#ff5466", dir: "left", cells: [{ r: 1, c: 2 }, { r: 2, c: 2 }, { r: 2, c: 1 }] },
+			{ id: "e", color: "#8f55ff", dir: "up", cells: [{ r: 3, c: 0 }, { r: 2, c: 0 }] },
+			{ id: "f", color: "#8f55ff", dir: "up", cells: [{ r: 3, c: 4 }, { r: 2, c: 4 }, { r: 1, c: 4 }] },
+			{ id: "g", color: "#8f55ff", dir: "right", cells: [{ r: 2, c: 5 }, { r: 3, c: 5 }, { r: 3, c: 6 }, { r: 4, c: 6 }] },
+			{ id: "h", color: "#8f55ff", dir: "up", cells: [{ r: 3, c: 9 }, { r: 3, c: 8 }, { r: 2, c: 8 }] },
+			{ id: "i", color: "#8f55ff", dir: "up", cells: [{ r: 5, c: 2 }, { r: 5, c: 1 }, { r: 5, c: 0 }, { r: 4, c: 0 }] },
+			{ id: "j", color: "#ff5466", dir: "left", cells: [{ r: 6, c: 4 }, { r: 6, c: 3 }, { r: 6, c: 2 }, { r: 6, c: 1 }] },
+			{ id: "k", color: "#ffeb3b", dir: "right", cells: [{ r: 4, c: 5 }, { r: 5, c: 5 }, { r: 5, c: 6 }] },
+			{ id: "l", color: "#ffeb3b", dir: "up", cells: [{ r: 5, c: 8 }, { r: 6, c: 8 }, { r: 6, c: 7 }, { r: 5, c: 7 }] },
+			{ id: "m", color: "#ffeb3b", dir: "down", cells: [{ r: 4, c: 9 }, { r: 5, c: 9 }, { r: 6, c: 9 }] },
+			{ id: "n", color: "#8f55ff", dir: "up", cells: [{ r: 7, c: 0 }, { r: 6, c: 0 }] },
+			{ id: "o", color: "#6fe64e", dir: "left", cells: [{ r: 8, c: 6 }, { r: 8, c: 5 }, { r: 8, c: 4 }, { r: 8, c: 3 }] },
+			{ id: "p", color: "#4ea4ff", dir: "up", cells: [{ r: 7, c: 6 }, { r: 6, c: 6 }] },
+			{ id: "q", color: "#ff5466", dir: "right", cells: [{ r: 7, c: 8 }, { r: 7, c: 9 }, { r: 8, c: 9 }] },
+			{ id: "r", color: "#6fe64e", dir: "left", cells: [{ r: 9, c: 2 }, { r: 9, c: 1 }, { r: 8, c: 1 }] },
+			{ id: "s", color: "#ff5466", dir: "right", cells: [{ r: 7, c: 4 }, { r: 7, c: 5 }] },
+			{ id: "t", color: "#6fe64e", dir: "right", cells: [{ r: 9, c: 3 }, { r: 9, c: 4 }, { r: 9, c: 5 }, { r: 9, c: 6 }] }
+		];
+
+		const boardEl = document.getElementById("board");
+		const movesEl = document.getElementById("moves");
+		const leftEl = document.getElementById("left");
+		const statusEl = document.getElementById("status");
+		const backBtn = document.getElementById("backBtn");
+		const forwardBtn = document.getElementById("forwardBtn");
+		const exitBtn = document.getElementById("exitBtn");
+		const resetBtn = document.getElementById("resetBtn");
+
+		let pieces = [];
+		let selectedId = null;
+		let moves = 0;
+		let dragState = null;
+		let dragPointerId = null;
+		let lastTap = null;
+		const exitingIds = new Set();
+
+		function cloneLevel(level) {
+			return level.map((p) => ({
+				...p,
+				cells: p.cells.map((cell) => ({ ...cell }))
+			}));
+		}
+
+		function occupiedMap(exceptId = null) {
+			const map = new Map();
+			for (const piece of pieces) {
+				if (piece.id === exceptId) continue;
+				const cells = cellsFor(piece);
+				for (const cell of cells) {
+					map.set(`${cell.r},${cell.c}`, piece.id);
+				}
+			}
+			return map;
+		}
+
+		function cellsFor(piece) {
+			return piece.cells;
+		}
+
+		function headCell(piece) {
+			return piece.cells[piece.cells.length - 1];
+		}
+
+		function dirVector(dir) {
+			if (dir === "left") return { dr: 0, dc: -1 };
+			if (dir === "right") return { dr: 0, dc: 1 };
+			if (dir === "up") return { dr: -1, dc: 0 };
+			return { dr: 1, dc: 0 };
+		}
+
+		function movementLabel(dr, dc) {
+			if (dr < 0) return "up";
+			if (dr > 0) return "down";
+			if (dc < 0) return "left";
+			return "right";
+		}
+
+		function canMove(piece, delta) {
+			if (delta === 0) return false;
+			const map = occupiedMap(piece.id);
+			const vec = dirVector(piece.dir);
+			const dr = vec.dr * delta;
+			const dc = vec.dc * delta;
+
+			for (const cell of piece.cells) {
+				const nr = cell.r + dr;
+				const nc = cell.c + dc;
+				if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) return false;
+				if (map.has(`${nr},${nc}`)) return false;
+			}
+			return true;
+		}
+
+		function movePiece(piece, delta) {
+			if (!canMove(piece, delta)) return false;
+			const vec = dirVector(piece.dir);
+			for (const cell of piece.cells) {
+				cell.r += vec.dr * delta;
+				cell.c += vec.dc * delta;
+			}
+			moves += 1;
+			return true;
+		}
+
+		// Returns true if moving 'step' steps in piece.dir would take the piece off the board
+		// with no other piece blocking the way. Works for all four sides.
+		function canExitInDirection(piece, step) {
+			const vec = dirVector(piece.dir);
+			const dr = vec.dr * step;
+			const dc = vec.dc * step;
+			const map = occupiedMap(piece.id);
+			let hitEdge = false;
+			for (const cell of piece.cells) {
+				const nr = cell.r + dr;
+				const nc = cell.c + dc;
+				if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) {
+					hitEdge = true;
+				} else if (map.has(`${nr},${nc}`)) {
+					return false; // a piece is blocking
+				}
+			}
+			return hitEdge;
+		}
+
+		function hasClearEscapePath(piece, step) {
+			const vec = dirVector(piece.dir);
+			const dr = vec.dr * step;
+			const dc = vec.dc * step;
+			const tip = step === 1 ? piece.cells[piece.cells.length - 1] : piece.cells[0];
+			const map = occupiedMap(piece.id);
+			let r = tip.r + dr;
+			let c = tip.c + dc;
+
+			while (r >= 0 && r < GRID && c >= 0 && c < GRID) {
+				if (map.has(`${r},${c}`)) return false;
+				r += dr;
+				c += dc;
+			}
+			return true;
+		}
+
+		function blockingPieceIdsInDirection(piece, step) {
+			const vec = dirVector(piece.dir);
+			const dr = vec.dr * step;
+			const dc = vec.dc * step;
+			const tip = step === 1 ? piece.cells[piece.cells.length - 1] : piece.cells[0];
+			const map = occupiedMap(piece.id);
+			const blockers = new Set();
+			let r = tip.r + dr;
+			let c = tip.c + dc;
+
+			while (r >= 0 && r < GRID && c >= 0 && c < GRID) {
+				const hit = map.get(`${r},${c}`);
+				if (hit) blockers.add(hit);
+				r += dr;
+				c += dc;
+			}
+			return [...blockers];
+		}
+
+		function flashBlockingArrows(blockerIds) {
+			if (!blockerIds.length) return;
+			for (const id of blockerIds) {
+				const blockerEl = boardEl.querySelector(`[data-id="${id}"]`);
+				if (blockerEl) blockerEl.classList.add("blocked-glow");
+			}
+			setTimeout(() => {
+				for (const id of blockerIds) {
+					const blockerEl = boardEl.querySelector(`[data-id="${id}"]`);
+					if (blockerEl) blockerEl.classList.remove("blocked-glow");
+				}
+			}, 900);
+		}
+
+		function preferredExitStep(piece) {
+			return hasClearEscapePath(piece, 1) ? 1 : 0;
+		}
+
+		function finalizeExitById(pieceId) {
+			pieces = pieces.filter((p) => p.id !== pieceId);
+			selectedId = pieces.length ? pieces[0].id : null;
+			moves += 1;
+		}
+
+		function animateExit(pieceId) {
+			if (exitingIds.has(pieceId)) return;
+			const piece = pieces.find((p) => p.id === pieceId);
+			if (!piece) return;
+
+			const step = preferredExitStep(piece);
+			if (!step) {
+				const blockers = blockingPieceIdsInDirection(piece, 1);
+				flashBlockingArrows(blockers);
+				status("No clear path to the edge. Blocking arrows are glowing.");
+				return;
+			}
+
+			endDrag();
+			exitingIds.add(pieceId);
+
+			const el = boardEl.querySelector(`[data-id="${pieceId}"]`);
+			const finish = () => {
+				exitingIds.delete(pieceId);
+				finalizeExitById(pieceId);
+				status(pieces.length ? "Arrow flew away!" : "You cleared every arrow. Level complete!");
+				render();
+			};
+
+			if (!el) {
+				finish();
+				return;
+			}
+
+			const cell = getCellSize();
+			const vec = dirVector(piece.dir);
+			const dr = vec.dr * step;
+			const dc = vec.dc * step;
+			const tip = step === 1 ? piece.cells[piece.cells.length - 1] : piece.cells[0];
+			let cellsToEdge = 1;
+			if (dc > 0) cellsToEdge = GRID - tip.c;
+			else if (dc < 0) cellsToEdge = tip.c + 1;
+			else if (dr > 0) cellsToEdge = GRID - tip.r;
+			else cellsToEdge = tip.r + 1;
+
+			const travelPx = cellsToEdge * cell + cell * 1.4;
+			el.classList.add("flying-out");
+			el.style.transform = `translate(${dc * travelPx}px, ${dr * travelPx}px) scale(0.92)`;
+			el.style.opacity = "0";
+
+			let done = false;
+			const onDone = () => {
+				if (done) return;
+				done = true;
+				finish();
+			};
+			el.addEventListener("transitionend", onDone, { once: true });
+			setTimeout(onDone, 420);
+		}
+
+		function tryExit(piece, step) {
+			if (!canExitInDirection(piece, step)) return false;
+			pieces = pieces.filter((p) => p.id !== piece.id);
+			selectedId = pieces.length ? pieces[0].id : null;
+			moves += 1;
+			return true;
+		}
+
+		function axisDirection(piece, delta) {
+			const vec = dirVector(piece.dir);
+			return movementLabel(vec.dr * delta, vec.dc * delta);
+		}
+
+		function startDrag(pieceId, pointerId, clientX, clientY) {
+			if (exitingIds.has(pieceId)) return;
+			dragPointerId = pointerId;
+			const active = pieces.find((p) => p.id === pieceId);
+			if (!active) return;
+			dragState = {
+				id: pieceId,
+				startX: clientX,
+				startY: clientY,
+				cellsMoved: 0
+			};
+			// mark the dragging element
+			const el = boardEl.querySelector(`[data-id="${pieceId}"]`);
+			if (el) el.classList.add("dragging");
+		}
+
+		function processDrag(clientX, clientY) {
+			if (!dragState) return;
+			const active = pieces.find((p) => p.id === dragState.id);
+			if (!active) return;
+
+			const cellSize = getCellSize();
+			const dx = clientX - dragState.startX;
+			const dy = clientY - dragState.startY;
+			const vec = dirVector(active.dir);
+			const axisPx = dx * vec.dc + dy * vec.dr;
+
+			// how many cells the pointer has moved from grab point
+			const targetCells = Math.round(axisPx / cellSize);
+			const needed = targetCells - dragState.cellsMoved;
+			if (needed === 0) return;
+
+			const step = needed > 0 ? 1 : -1;
+			let moved = 0;
+
+			const checkAndExit = () => {
+				if (step !== 1) return false;
+				if (!canExitInDirection(active, 1)) return false;
+				tryExit(active, 1);
+				endDrag();
+				status(pieces.length ? "Arrow exited!" : "You cleared every arrow. Level complete!");
+				render();
+				return true;
+			};
+
+			while (Math.abs(moved) < Math.abs(needed)) {
+				if (movePiece(active, step)) {
+					moved += step;
+					// auto-exit once the leading edge touches the board boundary
+					if (checkAndExit()) return;
+				} else {
+					// movePiece failed — could be board edge, not a piece
+					if (checkAndExit()) return;
+					break;
+				}
+			}
+
+			if (moved !== 0) {
+				dragState.cellsMoved += moved;
+				status(`Moved ${active.id.toUpperCase()} ${axisDirection(active, step)}.`);
+				render();
+				// restore dragging class removed by render()
+				const el = boardEl.querySelector(`[data-id="${active.id}"]`);
+				if (el) el.classList.add("dragging");
+			}
+		}
+
+		function endDrag(pointerId = null) {
+			if (pointerId !== null && dragPointerId !== null && pointerId !== dragPointerId) return;
+			const el = dragState ? boardEl.querySelector(`[data-id="${dragState.id}"]`) : null;
+			if (el) el.classList.remove("dragging");
+			dragPointerId = null;
+			dragState = null;
+		}
+
+		function handleTouchDoubleTap(pieceId, clientX, clientY, movedCells) {
+			if (movedCells !== 0) {
+				lastTap = null;
+				return;
+			}
+
+			const now = performance.now();
+			const thresholdMs = 320;
+			const thresholdPx = 28;
+
+			if (
+				lastTap &&
+				lastTap.id === pieceId &&
+				now - lastTap.time <= thresholdMs &&
+				Math.hypot(clientX - lastTap.x, clientY - lastTap.y) <= thresholdPx
+			) {
+				lastTap = null;
+				animateExit(pieceId);
+				return;
+			}
+
+			lastTap = { id: pieceId, x: clientX, y: clientY, time: now };
+		}
+
+		function renderPiece(piece) {
+			const cell = getCellSize();
+			const cells = cellsFor(piece);
+			const minR = Math.min(...cells.map((it) => it.r));
+			const maxR = Math.max(...cells.map((it) => it.r));
+			const minC = Math.min(...cells.map((it) => it.c));
+			const maxC = Math.max(...cells.map((it) => it.c));
+			const width = (maxC - minC + 1) * cell;
+			const height = (maxR - minR + 1) * cell;
+			const thickness = Math.max(14, Math.round(cell * 0.37));
+			const headSize = Math.max(14, Math.round(cell * 0.26));
+
+			const pieceEl = document.createElement("div");
+			pieceEl.className = "piece";
+			pieceEl.dataset.id = piece.id;
+			pieceEl.dataset.selected = String(piece.id === selectedId);
+			pieceEl.style.left = `${minC * cell}px`;
+			pieceEl.style.top = `${minR * cell}px`;
+			pieceEl.style.width = `${width}px`;
+			pieceEl.style.height = `${height}px`;
+			pieceEl.style.setProperty("--color", piece.color);
+
+			const svgNs = "http://www.w3.org/2000/svg";
+			const svg = document.createElementNS(svgNs, "svg");
+			svg.setAttribute("width", String(width));
+			svg.setAttribute("height", String(height));
+			svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+			svg.style.overflow = "visible";
+
+			const points = cells.map((cellPos) => ({
+				x: (cellPos.c - minC + 0.5) * cell,
+				y: (cellPos.r - minR + 0.5) * cell
+			}));
+
+			const pathData = points.map((pt, idx) => `${idx === 0 ? "M" : "L"} ${pt.x} ${pt.y}`).join(" ");
+
+			const outlinePath = document.createElementNS(svgNs, "path");
+			outlinePath.setAttribute("d", pathData);
+			outlinePath.setAttribute("fill", "none");
+			outlinePath.setAttribute("stroke", "rgba(86, 24, 62, 0.6)");
+			outlinePath.setAttribute("stroke-width", String(thickness + 5));
+			outlinePath.setAttribute("stroke-linecap", "round");
+			outlinePath.setAttribute("stroke-linejoin", "round");
+
+			const basePath = document.createElementNS(svgNs, "path");
+			basePath.setAttribute("d", pathData);
+			basePath.setAttribute("fill", "none");
+			basePath.setAttribute("stroke", piece.color);
+			basePath.setAttribute("stroke-width", String(thickness));
+			basePath.setAttribute("stroke-linecap", "round");
+			basePath.setAttribute("stroke-linejoin", "round");
+
+			const glossPath = document.createElementNS(svgNs, "path");
+			glossPath.setAttribute("d", pathData);
+			glossPath.setAttribute("fill", "none");
+			glossPath.setAttribute("stroke", "rgba(255,255,255,0.35)");
+			glossPath.setAttribute("stroke-width", String(Math.max(3, Math.round(thickness * 0.22))));
+			glossPath.setAttribute("stroke-linecap", "round");
+			glossPath.setAttribute("stroke-linejoin", "round");
+
+			const tip = points[points.length - 1];
+			const vec = dirVector(piece.dir);
+			const perp = { x: -vec.dr, y: vec.dc };
+			const tipPoint = { x: tip.x + vec.dc * headSize * 0.8, y: tip.y + vec.dr * headSize * 0.8 };
+			const baseCenter = { x: tip.x - vec.dc * headSize * 0.45, y: tip.y - vec.dr * headSize * 0.45 };
+			const p1 = `${tipPoint.x},${tipPoint.y}`;
+			const p2 = `${baseCenter.x + perp.x * headSize * 0.55},${baseCenter.y + perp.y * headSize * 0.55}`;
+			const p3 = `${baseCenter.x - perp.x * headSize * 0.55},${baseCenter.y - perp.y * headSize * 0.55}`;
+
+			const arrowHead = document.createElementNS(svgNs, "polygon");
+			arrowHead.setAttribute("points", `${p1} ${p2} ${p3}`);
+			arrowHead.setAttribute("fill", piece.color);
+			arrowHead.setAttribute("stroke", "rgba(86, 24, 62, 0.7)");
+			arrowHead.setAttribute("stroke-width", "1");
+
+			const headGloss = document.createElementNS(svgNs, "polygon");
+			const g1 = `${(tipPoint.x + baseCenter.x) / 2},${(tipPoint.y + baseCenter.y) / 2}`;
+			headGloss.setAttribute("points", `${g1} ${p2} ${p1}`);
+			headGloss.setAttribute("fill", "rgba(255,255,255,0.24)");
+			headGloss.setAttribute("stroke", "none");
+
+			svg.append(outlinePath, basePath, glossPath, arrowHead, headGloss);
+			pieceEl.append(svg);
+
+			pieceEl.addEventListener("pointerdown", (event) => {
+				event.preventDefault();
+				if (exitingIds.has(piece.id)) return;
+				selectPiece(piece.id);
+				startDrag(piece.id, event.pointerId, event.clientX, event.clientY);
+			});
+
+			pieceEl.addEventListener("dblclick", (event) => {
+				event.preventDefault();
+				animateExit(piece.id);
+			});
+
+			pieceEl.addEventListener("pointerup", (event) => {
+				const movedCells = dragState && dragState.id === piece.id ? Math.abs(dragState.cellsMoved) : 0;
+				if (event.pointerType === "touch") {
+					handleTouchDoubleTap(piece.id, event.clientX, event.clientY, movedCells);
+				}
+				endDrag(event.pointerId);
+			});
+			pieceEl.addEventListener("pointercancel", (event) => endDrag(event.pointerId));
+
+			return pieceEl;
+		}
+
+		function getCellSize() {
+			return boardEl.clientWidth / GRID;
+		}
+
+		function status(message) {
+			statusEl.textContent = message;
+		}
+
+		function selectPiece(id) {
+			if (!pieces.some((p) => p.id === id)) return;
+			if (selectedId === id) {
+				const selectedCurrent = pieces.find((p) => p.id === id);
+				status(`Selected ${id.toUpperCase()} (${selectedCurrent.dir}).`);
+				return;
+			}
+			selectedId = id;
+			const selected = pieces.find((p) => p.id === id);
+			status(`Selected ${id.toUpperCase()} (${selected.dir}).`);
+			render();
+		}
+
+		function selectedPiece() {
+			return pieces.find((p) => p.id === selectedId) || null;
+		}
+
+		function moveSelected(delta) {
+			const piece = selectedPiece();
+			if (!piece) {
+				status("Select an arrow first.");
+				return;
+			}
+			const couldMove = movePiece(piece, delta);
+			if (!couldMove && (delta !== 1 || !canExitInDirection(piece, 1))) {
+				status("Blocked. That move is not possible.");
+			} else if (delta === 1 && tryExit(piece, 1)) {
+				if (!pieces.length) status("You cleared every arrow. Level complete!");
+				else status(`Arrow ${piece.id.toUpperCase()} exited.`);
+			} else {
+				status(`Moved ${piece.id.toUpperCase()} ${axisDirection(piece, delta)}.`);
+			}
+			render();
+		}
+
+		function exitSelected() {
+			const piece = selectedPiece();
+			if (!piece) {
+				status("Select an arrow first.");
+				return;
+			}
+			if (!tryExit(piece, 1)) {
+				status("No clear path to the edge yet.");
+			} else if (!pieces.length) {
+				status("You cleared every arrow. Level complete!");
+			} else {
+				status(`Arrow ${piece.id.toUpperCase()} exited.`);
+			}
+			render();
+		}
+
+		function reset() {
+			pieces = cloneLevel(INITIAL_LEVEL);
+			selectedId = pieces[0]?.id ?? null;
+			moves = 0;
+			status("Level reset. Select and slide arrows to clear paths.");
+			render();
+		}
+
+		function render() {
+			boardEl.innerHTML = "";
+			for (const piece of pieces) {
+				boardEl.appendChild(renderPiece(piece));
+			}
+			movesEl.textContent = String(moves);
+			leftEl.textContent = String(pieces.length);
+			backBtn.disabled = !selectedPiece();
+			forwardBtn.disabled = !selectedPiece();
+			exitBtn.disabled = !selectedPiece();
+		}
+
+		backBtn.addEventListener("click", () => moveSelected(-1));
+		forwardBtn.addEventListener("click", () => moveSelected(1));
+		exitBtn.addEventListener("click", exitSelected);
+		resetBtn.addEventListener("click", reset);
+
+		window.addEventListener("keydown", (event) => {
+			const piece = selectedPiece();
+			if (!piece) return;
+
+			if (event.code === "Space") {
+				event.preventDefault();
+				exitSelected();
+				return;
+			}
+
+			const keyVec =
+				event.key === "ArrowLeft" ? { dr: 0, dc: -1 } :
+				event.key === "ArrowRight" ? { dr: 0, dc: 1 } :
+				event.key === "ArrowUp" ? { dr: -1, dc: 0 } :
+				event.key === "ArrowDown" ? { dr: 1, dc: 0 } :
+				null;
+
+			if (!keyVec) return;
+
+			const vec = dirVector(piece.dir);
+			const projection = keyVec.dr * vec.dr + keyVec.dc * vec.dc;
+			if (projection === 0) return;
+
+			event.preventDefault();
+			moveSelected(projection > 0 ? 1 : -1);
+		});
+
+		window.addEventListener("resize", render);
+		window.addEventListener("pointermove", (event) => {
+			if (dragPointerId === null || event.pointerId !== dragPointerId) return;
+			processDrag(event.clientX, event.clientY);
+		});
+		window.addEventListener("pointerup", (event) => endDrag(event.pointerId));
+		window.addEventListener("pointercancel", (event) => endDrag(event.pointerId));
+		window.addEventListener("blur", () => endDrag());
+		reset();
+	</script>
+</body>
+</html>
