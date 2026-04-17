@@ -1816,6 +1816,7 @@
     .box.objective-intro-color {
       background: transparent;
       perspective: 800px;
+      overflow: visible;
     }
 
     .objective-intro-cell {
@@ -1838,6 +1839,12 @@
       border-radius: inherit;
       backface-visibility: hidden;
       background: var(--objective-intro-color, rgba(220, 220, 220, 0.9));
+    }
+
+    .box.objective-intro-color .objective-intro-face {
+      inset: calc(var(--box-height) / 2 - var(--cell-size-y, var(--cell-size)))
+             calc(var(--box-size) / 2 - var(--cell-size-x, var(--cell-size)));
+      border-radius: 3px;
     }
 
     .objective-intro-face.back {
@@ -3206,6 +3213,8 @@
     const OBJECTIVE_INTRO_SETTLE_MS = 220;
     const LEVEL_INTRO_FIT_PADDING = 0.9;
     const LEVEL_POST_INTRO_ZOOM_MS = 560;
+    const BOX_RELATIVE_SCALE = 1.14;
+    const BOX_MAX_EXTRA_PX = 8;
     const playerSwooshSfx = new Audio("sounds/player_swoosh.mp3");
     const agentSwooshSfx = new Audio("sounds/agent_swoosh.mp3");
     const objectiveSfx = new Audio("sound/objective.mp3");
@@ -5421,12 +5430,15 @@
 
       boardEl.style.gridTemplateColumns = gridColumns();
       boardEl.style.gridTemplateRows = gridRows();
-      const boxHeight = Math.round(cellY * 1.00);
+      const boxWidth = Math.round(Math.min(cellX + BOX_MAX_EXTRA_PX, cellX * BOX_RELATIVE_SCALE));
+      const boxHeight = Math.round(Math.min(cellY + BOX_MAX_EXTRA_PX, cellY * BOX_RELATIVE_SCALE));
       boardEl.style.setProperty("--cell-size", `${baseCell}px`);
+      boardEl.style.setProperty("--cell-size-x", `${cellX}px`);
+      boardEl.style.setProperty("--cell-size-y", `${cellY}px`);
       boardEl.style.setProperty("--dot-size", `${dot}px`);
       boardEl.style.setProperty("--line-thickness", `${thickness}px`);
       boardEl.style.setProperty("--line-pad", `${pad}px`);
-      boardEl.style.setProperty("--box-size", `${cellX}px`);
+      boardEl.style.setProperty("--box-size", `${boxWidth}px`);
       boardEl.style.setProperty("--box-height", `${boxHeight}px`);
       layoutBoardBetweenHudAndBoosters();
     }
