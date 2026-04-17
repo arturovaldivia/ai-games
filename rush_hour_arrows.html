@@ -9,14 +9,22 @@
 	<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet" />
 	<style>
 		:root {
-			--bg-1: #ea87c7;
-			--bg-2: #d861ad;
-			--panel: #fbe9f7;
-			--panel-line: #c186af;
+			--bg-1: #ff9ed1;
+			--bg-2: #d869b3;
+			--bg-3: #b24f98;
+			--panel: rgba(255, 243, 251, 0.96);
+			--panel-line: #dca4ca;
 			--text: #5b2550;
 			--cell: 58px;
 			--board-size: min(80vmin, 620px);
-			--shadow: 0 12px 26px rgba(104, 23, 69, 0.2);
+			--shadow: 0 20px 40px rgba(90, 23, 69, 0.24);
+			--soft-shadow: 0 10px 22px rgba(110, 31, 88, 0.16);
+			--btn-main-top: #ff7fb0;
+			--btn-main-bottom: #f3468c;
+			--btn-main-depth: #a4255c;
+			--btn-alt-top: #98c4ff;
+			--btn-alt-bottom: #4b8df4;
+			--btn-alt-depth: #2e5ea8;
 		}
 
 		* {
@@ -31,12 +39,41 @@
 			font-family: "Baloo 2", cursive;
 			color: var(--text);
 			background:
-				radial-gradient(circle at 20% 18%, #ffd5ef 0 12%, transparent 13%),
-				radial-gradient(circle at 80% 82%, #ffb8e4 0 10%, transparent 11%),
-				linear-gradient(150deg, var(--bg-1), var(--bg-2));
+				radial-gradient(circle at 14% 16%, rgba(255, 244, 252, 0.65) 0 14%, transparent 15%),
+				radial-gradient(circle at 85% 82%, rgba(255, 205, 236, 0.55) 0 12%, transparent 13%),
+				linear-gradient(160deg, var(--bg-1), var(--bg-2) 58%, var(--bg-3));
 			display: grid;
 			place-items: center;
 			padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+			position: relative;
+			overflow-x: hidden;
+		}
+
+		body::before,
+		body::after {
+			content: "";
+			position: fixed;
+			inset: auto;
+			border-radius: 50%;
+			pointer-events: none;
+			z-index: -1;
+			filter: blur(20px);
+		}
+
+		body::before {
+			width: 42vmax;
+			height: 42vmax;
+			left: -10vmax;
+			top: -16vmax;
+			background: radial-gradient(circle, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+		}
+
+		body::after {
+			width: 35vmax;
+			height: 35vmax;
+			right: -8vmax;
+			bottom: -14vmax;
+			background: radial-gradient(circle, rgba(255, 192, 228, 0.45), rgba(255, 192, 228, 0));
 		}
 
 		.app {
@@ -48,28 +85,45 @@
 		}
 
 		.board-shell {
-			background: linear-gradient(180deg, #efbfdc, #e5aad0);
-			border: 4px solid #9f5f89;
+			background: linear-gradient(180deg, #f2cbe4, #e4aad0 62%, #d892bf);
+			border: 3px solid #9b5a86;
 			border-radius: 28px;
 			padding: 10px;
 			box-shadow: var(--shadow);
 			position: relative;
 		}
 
+		.board-shell::before {
+			content: "";
+			position: absolute;
+			inset: 6px;
+			border-radius: 22px;
+			border: 1px solid rgba(255, 255, 255, 0.45);
+			pointer-events: none;
+		}
+
 		.board {
 			width: var(--board-size);
 			height: var(--board-size);
 			border-radius: 22px;
-			border: 3px solid #bb79a8;
+			border: 3px solid #b876a7;
 			background:
-				linear-gradient(90deg, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.04) 50%),
-				linear-gradient(0deg, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.04) 50%),
-				linear-gradient(180deg, #f7deee, #f2d4e7);
+				linear-gradient(90deg, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.06) 50%),
+				linear-gradient(0deg, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.06) 50%),
+				linear-gradient(180deg, #f9e5f2, #f1d1e6);
 			background-size: calc(var(--cell) / 3) calc(var(--cell) / 3);
 			position: relative;
 			overflow: hidden;
 			touch-action: none;
-			box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.42), inset 0 -3px 0 rgba(159, 97, 141, 0.18);
+			box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.48), inset 0 -4px 0 rgba(159, 97, 141, 0.2), 0 8px 16px rgba(111, 42, 89, 0.12);
+		}
+
+		.board::after {
+			content: "";
+			position: absolute;
+			inset: 0;
+			pointer-events: none;
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0));
 		}
 
 		.piece {
@@ -77,7 +131,7 @@
 			user-select: none;
 			cursor: grab;
 			transition: transform 120ms ease;
-			filter: drop-shadow(0 4px 5px rgba(74, 32, 52, 0.28));
+			filter: drop-shadow(0 7px 7px rgba(66, 24, 49, 0.34));
 		}
 
 		.piece.dragging {
@@ -108,9 +162,9 @@
 		}
 
 		.piece[data-selected="true"] {
-			transform: scale(1.06);
+			transform: scale(1.075);
 			z-index: 3;
-			filter: drop-shadow(0 0 0.5rem rgba(255, 255, 255, 0.75)) drop-shadow(0 5px 8px rgba(0, 0, 0, 0.32));
+			filter: drop-shadow(0 0 0.5rem rgba(255, 255, 255, 0.82)) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.34));
 		}
 
 		.shaft {
@@ -130,19 +184,21 @@
 
 		.panel {
 			background: var(--panel);
-			border: 3px solid #d08eb7;
+			border: 2px solid var(--panel-line);
 			border-radius: 18px;
-			box-shadow: var(--shadow);
+			box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.65);
 			padding: 12px;
 			display: grid;
 			gap: 10px;
+			backdrop-filter: blur(5px);
 		}
 
 		h1 {
 			margin: 0;
-			font-size: 1.8rem;
+			font-size: 1.86rem;
 			line-height: 1;
-			color: #8d2f67;
+			color: #8f2f67;
+			text-shadow: 0 1px 0 rgba(255, 255, 255, 0.48);
 		}
 
 		.subtitle {
@@ -159,13 +215,14 @@
 		}
 
 		.chip {
-			background: #fff2fa;
-			border: 2px solid #e0a8cd;
+			background: linear-gradient(180deg, #fff8fd, #ffeef8);
+			border: 2px solid #e5b2d2;
 			border-radius: 12px;
 			padding: 6px 10px;
 			text-align: center;
 			font-weight: 700;
 			font-size: 0.95rem;
+			box-shadow: 0 3px 8px rgba(137, 54, 106, 0.1);
 		}
 
 		.controls {
@@ -184,22 +241,24 @@
 			cursor: pointer;
 			transition: transform 120ms ease, filter 120ms ease;
 			color: #fff;
-			background: linear-gradient(180deg, #ff679e, #eb3e84);
-			box-shadow: 0 4px 0 #af2b62;
+			background: linear-gradient(180deg, var(--btn-main-top), var(--btn-main-bottom));
+			box-shadow: 0 5px 0 var(--btn-main-depth), 0 10px 14px rgba(124, 30, 80, 0.25);
+			text-shadow: 0 1px 0 rgba(79, 16, 44, 0.35);
+			letter-spacing: 0.01em;
 		}
 
 		button:hover {
-			filter: brightness(1.06);
+			filter: brightness(1.05) saturate(1.05);
 		}
 
 		button:active {
 			transform: translateY(2px);
-			box-shadow: 0 2px 0 #af2b62;
+			box-shadow: 0 3px 0 var(--btn-main-depth), 0 5px 8px rgba(124, 30, 80, 0.22);
 		}
 
 		.minor {
-			background: linear-gradient(180deg, #8ab7ff, #4a88ef);
-			box-shadow: 0 4px 0 #2e5ea8;
+			background: linear-gradient(180deg, var(--btn-alt-top), var(--btn-alt-bottom));
+			box-shadow: 0 5px 0 var(--btn-alt-depth), 0 10px 14px rgba(46, 94, 168, 0.23);
 		}
 
 		.hint {
@@ -215,6 +274,112 @@
 			font-size: 1rem;
 			font-weight: 700;
 			color: #8d2f67;
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.42));
+			border: 1px solid rgba(226, 179, 213, 0.9);
+			border-radius: 10px;
+			padding: 7px 10px;
+			box-shadow: var(--soft-shadow);
+		}
+
+		.fx-layer {
+			position: fixed;
+			inset: 0;
+			pointer-events: none;
+			z-index: 80;
+			overflow: hidden;
+		}
+
+		.spark {
+			position: fixed;
+			left: 0;
+			top: 0;
+			width: 9px;
+			height: 9px;
+			border-radius: 999px;
+			background: hsl(var(--hue), 96%, 66%);
+			box-shadow: 0 0 10px hsl(var(--hue), 95%, 70%);
+			transform: translate(0, 0);
+			animation: sparkOut 620ms cubic-bezier(0.16, 0.84, 0.35, 1) forwards;
+		}
+
+		@keyframes sparkOut {
+			0% {
+				opacity: 0;
+				transform: translate(var(--sx), var(--sy)) scale(0.7);
+			}
+			10% {
+				opacity: 1;
+			}
+			100% {
+				opacity: 0;
+				transform: translate(var(--tx), var(--ty)) scale(0.05);
+			}
+		}
+
+		.win-overlay {
+			position: fixed;
+			inset: 0;
+			display: grid;
+			place-items: center;
+			padding: 20px;
+			background: rgba(76, 22, 62, 0.32);
+			backdrop-filter: blur(5px);
+			z-index: 90;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 220ms ease;
+		}
+
+		.win-overlay.show {
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		.win-card {
+			width: min(460px, 100%);
+			background: linear-gradient(180deg, rgba(255, 246, 252, 0.98), rgba(255, 236, 247, 0.97));
+			border: 2px solid #e3abd2;
+			border-radius: 22px;
+			box-shadow: 0 24px 48px rgba(84, 23, 67, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+			padding: 20px 16px;
+			text-align: center;
+			transform: translateY(8px) scale(0.96);
+			transition: transform 220ms ease;
+		}
+
+		.win-overlay.show .win-card {
+			transform: translateY(0) scale(1);
+		}
+
+		.win-title {
+			margin: 0;
+			font-size: 2rem;
+			line-height: 1;
+			color: #8b2c66;
+			text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+		}
+
+		.win-sub {
+			margin: 8px 0 14px;
+			font-size: 1rem;
+			color: #7b3b62;
+		}
+
+		.win-chip {
+			display: inline-block;
+			padding: 7px 12px;
+			border-radius: 999px;
+			background: linear-gradient(180deg, #fff8fd, #ffebf7);
+			border: 2px solid #e6b6d4;
+			font-weight: 700;
+			color: #7f3462;
+			box-shadow: 0 6px 14px rgba(129, 50, 99, 0.14);
+		}
+
+		.win-actions {
+			margin-top: 16px;
+			display: grid;
+			justify-content: center;
 		}
 
 		.mobile-only {
@@ -333,9 +498,9 @@
 				z-index: 40;
 				padding: 10px;
 				gap: 6px;
-				background: rgba(251, 233, 247, 0.94);
+				background: rgba(254, 240, 250, 0.94);
 				backdrop-filter: blur(6px);
-				box-shadow: 0 8px 20px rgba(93, 31, 68, 0.28);
+				box-shadow: 0 10px 24px rgba(93, 31, 68, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 			}
 
 			.panel h1,
@@ -362,7 +527,7 @@
 
 			.controls {
 				order: 3;
-				grid-template-columns: repeat(4, minmax(0, 1fr));
+				grid-template-columns: repeat(5, minmax(0, 1fr));
 				gap: 6px;
 			}
 
@@ -371,11 +536,39 @@
 				padding: 8px 6px;
 				font-size: 0.8rem;
 				line-height: 1.05;
+				box-shadow: 0 4px 0 var(--btn-main-depth), 0 6px 10px rgba(124, 30, 80, 0.2);
+			}
+
+			.minor {
+				box-shadow: 0 4px 0 var(--btn-alt-depth), 0 6px 10px rgba(46, 94, 168, 0.2);
+			}
+
+			.win-title {
+				font-size: 1.6rem;
+			}
+
+			.win-sub {
+				font-size: 0.92rem;
+			}
+
+			.win-card {
+				padding: 16px 12px;
 			}
 		}
 	</style>
 </head>
 <body>
+	<div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
+	<div id="winOverlay" class="win-overlay" aria-hidden="true">
+		<div class="win-card" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+			<h2 id="winTitle" class="win-title">Level Cleared!</h2>
+			<p class="win-sub">Awesome pathing. You solved this board.</p>
+			<div class="win-chip">Moves: <span id="winMoves">0</span></div>
+			<div class="win-actions">
+				<button id="winResetBtn" class="minor" type="button">Play Again</button>
+			</div>
+		</div>
+	</div>
 	<main class="app">
 		<section class="board-shell">
 			<div id="board" class="board" aria-label="Rush Hour Arrows board" role="application"></div>
@@ -395,6 +588,7 @@
 				<button id="forwardBtn" type="button">Move Forward</button>
 				<button id="exitBtn" type="button">Exit Arrow</button>
 				<button id="resetBtn" class="minor" type="button">Reset Level</button>
+				<button id="soundBtn" class="minor" type="button" aria-pressed="false">SFX On</button>
 			</div>
 
 			<p class="status" id="status">Select an arrow to start.</p>
@@ -434,10 +628,15 @@
 		const movesEl = document.getElementById("moves");
 		const leftEl = document.getElementById("left");
 		const statusEl = document.getElementById("status");
+		const fxLayerEl = document.getElementById("fxLayer");
+		const winOverlayEl = document.getElementById("winOverlay");
+		const winMovesEl = document.getElementById("winMoves");
 		const backBtn = document.getElementById("backBtn");
 		const forwardBtn = document.getElementById("forwardBtn");
 		const exitBtn = document.getElementById("exitBtn");
 		const resetBtn = document.getElementById("resetBtn");
+		const soundBtn = document.getElementById("soundBtn");
+		const winResetBtn = document.getElementById("winResetBtn");
 
 		let pieces = [];
 		let selectedId = null;
@@ -445,7 +644,99 @@
 		let dragState = null;
 		let dragPointerId = null;
 		let lastTap = null;
+		let didWin = false;
+		let audioCtx = null;
+		let muted = false;
+		let lastMoveSfxAt = 0;
 		const exitingIds = new Set();
+
+		function getAudioContext() {
+			if (muted) return null;
+			const Ctx = window.AudioContext || window.webkitAudioContext;
+			if (!Ctx) return null;
+			if (!audioCtx) audioCtx = new Ctx();
+			if (audioCtx.state === "suspended") {
+				audioCtx.resume().catch(() => {});
+			}
+			return audioCtx;
+		}
+
+		function triggerHaptic(pattern) {
+			if (muted) return;
+			if (typeof navigator !== "undefined" && navigator.vibrate) {
+				navigator.vibrate(pattern);
+			}
+		}
+
+		function playTone({ frequency = 440, type = "sine", duration = 0.08, volume = 0.04, slideTo = null }) {
+			const ctx = getAudioContext();
+			if (!ctx) return;
+
+			const now = ctx.currentTime;
+			const osc = ctx.createOscillator();
+			const gain = ctx.createGain();
+			osc.type = type;
+			osc.frequency.setValueAtTime(frequency, now);
+			if (slideTo) {
+				osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+			}
+
+			gain.gain.setValueAtTime(0.0001, now);
+			gain.gain.exponentialRampToValueAtTime(volume, now + 0.01);
+			gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+			osc.connect(gain);
+			gain.connect(ctx.destination);
+			osc.start(now);
+			osc.stop(now + duration + 0.01);
+		}
+
+		function playMoveSfx() {
+			const now = performance.now();
+			if (now - lastMoveSfxAt < 70) return;
+			lastMoveSfxAt = now;
+			playTone({ frequency: 540, type: "triangle", duration: 0.045, volume: 0.025, slideTo: 620 });
+		}
+
+		function playExitSfx() {
+			playTone({ frequency: 620, type: "triangle", duration: 0.08, volume: 0.05, slideTo: 760 });
+			setTimeout(() => playTone({ frequency: 880, type: "sine", duration: 0.06, volume: 0.035 }), 42);
+			triggerHaptic(16);
+		}
+
+		function playWinSfx() {
+			playTone({ frequency: 660, type: "triangle", duration: 0.1, volume: 0.05 });
+			setTimeout(() => playTone({ frequency: 880, type: "triangle", duration: 0.1, volume: 0.05 }), 90);
+			setTimeout(() => playTone({ frequency: 1046, type: "sine", duration: 0.18, volume: 0.055 }), 180);
+			triggerHaptic([25, 35, 20]);
+		}
+
+		function updateSoundButton() {
+			soundBtn.textContent = muted ? "SFX Off" : "SFX On";
+			soundBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+		}
+
+		function loadSoundPreference() {
+			try {
+				muted = localStorage.getItem("rushArrowsMuted") === "1";
+			} catch {
+				muted = false;
+			}
+			updateSoundButton();
+		}
+
+		function toggleSound() {
+			muted = !muted;
+			try {
+				localStorage.setItem("rushArrowsMuted", muted ? "1" : "0");
+			} catch {
+				// ignore persistence issues
+			}
+			updateSoundButton();
+			if (!muted) {
+				playTone({ frequency: 740, type: "sine", duration: 0.07, volume: 0.035 });
+			}
+		}
 
 		function cloneLevel(level) {
 			return level.map((p) => ({
@@ -512,6 +803,7 @@
 				cell.c += vec.dc * delta;
 			}
 			moves += 1;
+			playMoveSfx();
 			return true;
 		}
 
@@ -589,13 +881,68 @@
 			return hasClearEscapePath(piece, 1) ? 1 : 0;
 		}
 
+		function sleep(ms) {
+			return new Promise((resolve) => setTimeout(resolve, ms));
+		}
+
 		function finalizeExitById(pieceId) {
+			const piece = pieces.find((p) => p.id === pieceId);
+			if (piece) {
+				emitExitSpark(piece);
+			}
 			pieces = pieces.filter((p) => p.id !== pieceId);
 			selectedId = pieces.length ? pieces[0].id : null;
 			moves += 1;
+			playExitSfx();
 		}
 
-		function animateExit(pieceId) {
+		function showWinOverlay() {
+			if (didWin) return;
+			didWin = true;
+			winMovesEl.textContent = String(moves);
+			winOverlayEl.classList.add("show");
+			winOverlayEl.setAttribute("aria-hidden", "false");
+			playWinSfx();
+		}
+
+		function hideWinOverlay() {
+			didWin = false;
+			winOverlayEl.classList.remove("show");
+			winOverlayEl.setAttribute("aria-hidden", "true");
+		}
+
+		function emitExitSpark(piece) {
+			const rect = boardEl.getBoundingClientRect();
+			let sumR = 0;
+			let sumC = 0;
+			for (const cell of piece.cells) {
+				sumR += cell.r;
+				sumC += cell.c;
+			}
+			const centerR = sumR / piece.cells.length + 0.5;
+			const centerC = sumC / piece.cells.length + 0.5;
+			const x = rect.left + (centerC / GRID) * rect.width;
+			const y = rect.top + (centerR / GRID) * rect.height;
+
+			const count = 16;
+			for (let i = 0; i < count; i += 1) {
+				const spark = document.createElement("span");
+				spark.className = "spark";
+				spark.style.setProperty("--sx", `${x}px`);
+				spark.style.setProperty("--sy", `${y}px`);
+				const angle = (Math.PI * 2 * i) / count + Math.random() * 0.35;
+				const dist = 36 + Math.random() * 34;
+				const tx = x + Math.cos(angle) * dist;
+				const ty = y + Math.sin(angle) * dist;
+				spark.style.setProperty("--tx", `${tx}px`);
+				spark.style.setProperty("--ty", `${ty}px`);
+				spark.style.setProperty("--hue", String(320 + Math.floor(Math.random() * 50)));
+				fxLayerEl.appendChild(spark);
+				spark.addEventListener("animationend", () => spark.remove(), { once: true });
+			}
+		}
+
+		async function animateExit(pieceId) {
 			if (exitingIds.has(pieceId)) return;
 			const piece = pieces.find((p) => p.id === pieceId);
 			if (!piece) return;
@@ -611,51 +958,26 @@
 			endDrag();
 			exitingIds.add(pieceId);
 
-			const el = boardEl.querySelector(`[data-id="${pieceId}"]`);
-			const finish = () => {
-				exitingIds.delete(pieceId);
-				finalizeExitById(pieceId);
-				status(pieces.length ? "Arrow flew away!" : "You cleared every arrow. Level complete!");
-				render();
-			};
-
-			if (!el) {
-				finish();
-				return;
-			}
-
-			const cell = getCellSize();
+			// Snake-like escape: head advances cell by cell while body follows the trail.
 			const vec = dirVector(piece.dir);
 			const dr = vec.dr * step;
 			const dc = vec.dc * step;
-			const tip = step === 1 ? piece.cells[piece.cells.length - 1] : piece.cells[0];
-			let cellsToEdge = 1;
-			if (dc > 0) cellsToEdge = GRID - tip.c;
-			else if (dc < 0) cellsToEdge = tip.c + 1;
-			else if (dr > 0) cellsToEdge = GRID - tip.r;
-			else cellsToEdge = tip.r + 1;
+			const len = piece.cells.length;
+			const trail = piece.cells.map((cell) => ({ ...cell }));
+			let head = { ...trail[trail.length - 1] };
 
-			const travelPx = cellsToEdge * cell + cell * 1.4;
-			el.classList.add("flying-out");
-			el.style.transform = `translate(${dc * travelPx}px, ${dr * travelPx}px) scale(0.92)`;
-			el.style.opacity = "0";
+			while (head.r >= 0 && head.r < GRID && head.c >= 0 && head.c < GRID) {
+				head = { r: head.r + dr, c: head.c + dc };
+				trail.push(head);
+				piece.cells = trail.slice(-len).map((cell) => ({ ...cell }));
+				render();
+				await sleep(56);
+			}
 
-			let done = false;
-			const onDone = () => {
-				if (done) return;
-				done = true;
-				finish();
-			};
-			el.addEventListener("transitionend", onDone, { once: true });
-			setTimeout(onDone, 420);
-		}
-
-		function tryExit(piece, step) {
-			if (!canExitInDirection(piece, step)) return false;
-			pieces = pieces.filter((p) => p.id !== piece.id);
-			selectedId = pieces.length ? pieces[0].id : null;
-			moves += 1;
-			return true;
+			exitingIds.delete(pieceId);
+			finalizeExitById(pieceId);
+			status(pieces.length ? "Arrow slithered out!" : "You cleared every arrow. Level complete!");
+			render();
 		}
 
 		function axisDirection(piece, delta) {
@@ -701,10 +1023,7 @@
 			const checkAndExit = () => {
 				if (step !== 1) return false;
 				if (!canExitInDirection(active, 1)) return false;
-				tryExit(active, 1);
-				endDrag();
-				status(pieces.length ? "Arrow exited!" : "You cleared every arrow. Level complete!");
-				render();
+				animateExit(active.id);
 				return true;
 			};
 
@@ -904,13 +1223,13 @@
 			const couldMove = movePiece(piece, delta);
 			if (!couldMove && (delta !== 1 || !canExitInDirection(piece, 1))) {
 				status("Blocked. That move is not possible.");
-			} else if (delta === 1 && tryExit(piece, 1)) {
-				if (!pieces.length) status("You cleared every arrow. Level complete!");
-				else status(`Arrow ${piece.id.toUpperCase()} exited.`);
+				render();
+			} else if (delta === 1 && canExitInDirection(piece, 1)) {
+				animateExit(piece.id);
 			} else {
 				status(`Moved ${piece.id.toUpperCase()} ${axisDirection(piece, delta)}.`);
+				render();
 			}
-			render();
 		}
 
 		function exitSelected() {
@@ -919,20 +1238,19 @@
 				status("Select an arrow first.");
 				return;
 			}
-			if (!tryExit(piece, 1)) {
+			if (!canExitInDirection(piece, 1)) {
 				status("No clear path to the edge yet.");
-			} else if (!pieces.length) {
-				status("You cleared every arrow. Level complete!");
 			} else {
-				status(`Arrow ${piece.id.toUpperCase()} exited.`);
+				animateExit(piece.id);
 			}
-			render();
+			if (!canExitInDirection(piece, 1)) render();
 		}
 
 		function reset() {
 			pieces = cloneLevel(INITIAL_LEVEL);
 			selectedId = pieces[0]?.id ?? null;
 			moves = 0;
+			hideWinOverlay();
 			status("Level reset. Select and slide arrows to clear paths.");
 			render();
 		}
@@ -947,12 +1265,22 @@
 			backBtn.disabled = !selectedPiece();
 			forwardBtn.disabled = !selectedPiece();
 			exitBtn.disabled = !selectedPiece();
+			if (!pieces.length) {
+				showWinOverlay();
+			}
 		}
 
 		backBtn.addEventListener("click", () => moveSelected(-1));
 		forwardBtn.addEventListener("click", () => moveSelected(1));
 		exitBtn.addEventListener("click", exitSelected);
 		resetBtn.addEventListener("click", reset);
+		soundBtn.addEventListener("click", toggleSound);
+		winResetBtn.addEventListener("click", reset);
+		winOverlayEl.addEventListener("click", (event) => {
+			if (event.target === winOverlayEl) {
+				reset();
+			}
+		});
 
 		window.addEventListener("keydown", (event) => {
 			const piece = selectedPiece();
@@ -989,6 +1317,7 @@
 		window.addEventListener("pointerup", (event) => endDrag(event.pointerId));
 		window.addEventListener("pointercancel", (event) => endDrag(event.pointerId));
 		window.addEventListener("blur", () => endDrag());
+		loadSoundPreference();
 		reset();
 	</script>
 </body>
