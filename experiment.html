@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Experiment</title>
+  <style>
+    :root {
+      --bg-1: #0b1f3d;
+      --bg-2: #173d69;
+      --panel: #f4fbff;
+      --ink: #112740;
+      --line: #1a4f7f;
+      --chip: #e8f4ff;
+      --chip-line: #bfdbf6;
+      --btn: #ff7d20;
+      --btn-2: #ff5a2f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 560px at 50% -10%, #2f8dcc 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      padding: 12px;
+    }
+
+    .wrap {
+      width: min(96vw, 980px);
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: 0 24px 70px rgba(6, 16, 32, 0.45);
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel {
+      border: 2px solid #d4e8fb;
+      border-radius: 14px;
+      padding: 10px;
+      background: linear-gradient(180deg, #faffff, #edf7ff);
+      display: grid;
+      gap: 10px;
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: #184061;
+    }
+
+    .panel p {
+      margin: 0;
+      color: #3b5f7e;
+      font-size: 0.92rem;
+    }
+
+    canvas,
+    .board {
+      width: 100%;
+      display: block;
+      border: 3px solid #113558;
+      border-radius: 12px;
+      background: #e9f6ff;
+    }
+
+    #topCanvas {
+      height: auto;
+      cursor: crosshair;
+      touch-action: manipulation;
+    }
+
+    .board {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      touch-action: none;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.06) 50%),
+        linear-gradient(0deg, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.06) 50%),
+        linear-gradient(180deg, #f9e5f2, #f1d1e6);
+      background-size: calc(100% / 10) calc(100% / 10);
+    }
+
+    .hud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pill {
+      background: var(--chip);
+      border: 1px solid var(--chip-line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      color: #173958;
+      font-weight: 700;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 9px 13px;
+      background: linear-gradient(135deg, var(--btn), var(--btn-2));
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .minor {
+      background: linear-gradient(135deg, #72afff, #3b83ef);
+    }
+
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .piece {
+      position: absolute;
+      user-select: none;
+      cursor: grab;
+      transition: transform 120ms ease;
+      filter: drop-shadow(0 7px 7px rgba(66, 24, 49, 0.34));
+    }
+
+    .piece.dragging { transition: none; cursor: grabbing; z-index: 10; }
+    .piece.blocked-glow {
+      animation: blockedPulse 820ms ease 1;
+      z-index: 11;
+    }
+    .piece.blocked-glow svg {
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 12px rgba(255, 235, 59, 0.95));
+    }
+
+    @keyframes blockedPulse {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    .fx-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 80;
+      overflow: hidden;
+    }
+
+    .spark {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: hsl(var(--hue), 96%, 66%);
+      box-shadow: 0 0 10px hsl(var(--hue), 95%, 70%);
+      transform: translate(0, 0);
+      animation: sparkOut 620ms cubic-bezier(0.16, 0.84, 0.35, 1) forwards;
+    }
+
+    @keyframes sparkOut {
+      0% {
+        opacity: 0;
+        transform: translate(var(--sx), var(--sy)) scale(0.7);
+      }
+      10% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) scale(0.05);
+      }
+    }
+
+    .piece[data-selected="true"] {
+      transform: scale(1.06);
+      filter: drop-shadow(0 0 0.5rem rgba(255, 255, 255, 0.82)) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.34));
+      z-index: 5;
+    }
+
+    @media (max-width: 720px) {
+      .pill { font-size: 0.82rem; padding: 7px 10px; }
+      button { font-size: 0.86rem; padding: 9px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
+  <main class="wrap">
+    <section class="panel">
+      <h2>Top Panel: New Bouncy</h2>
+      <p>Launch in the bottom zone of this panel. Every arrow released below gives you +1 pointy here.</p>
+      <canvas id="topCanvas" width="900" height="420" aria-label="New bouncy panel"></canvas>
+      <div class="hud">
+        <div class="pill" id="topBubbles">Bubbles: 0</div>
+        <div class="pill" id="topAmmo">Pointies active: 0</div>
+        <div class="pill" id="topHint">Escaped arrows below auto-launch pointies here</div>
+        <button id="topRestart" class="minor" type="button">Reset Top</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Bottom Panel: Rush Hour Arrows</h2>
+      <p>Play normally. When an arrow exits, a pointy is added to the top panel queue.</p>
+      <div id="bottomBoard" class="board" aria-label="Rush Hour board" role="application"></div>
+      <div class="hud">
+        <div class="pill">Moves: <span id="bottomMoves">0</span></div>
+        <div class="pill">Left: <span id="bottomLeft">0</span></div>
+        <div class="pill" id="bottomStatus">Select an arrow to begin.</div>
+      </div>
+      <div class="controls">
+        <button id="bottomBack" type="button">Back</button>
+        <button id="bottomForward" type="button">Forward</button>
+        <button id="bottomExit" type="button">Exit Arrow</button>
+        <button id="bottomReset" class="minor" type="button">Reset Bottom</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const topCanvas = document.getElementById("topCanvas");
+    const topCtx = topCanvas.getContext("2d");
+    const topBubblesEl = document.getElementById("topBubbles");
+    const topAmmoEl = document.getElementById("topAmmo");
+    const topHintEl = document.getElementById("topHint");
+    const topRestartBtn = document.getElementById("topRestart");
+    const fxLayerEl = document.getElementById("fxLayer");
+
+    const bottomBoardEl = document.getElementById("bottomBoard");
+    const bottomMovesEl = document.getElementById("bottomMoves");
+    const bottomLeftEl = document.getElementById("bottomLeft");
+    const bottomStatusEl = document.getElementById("bottomStatus");
+    const bottomBackBtn = document.getElementById("bottomBack");
+    const bottomForwardBtn = document.getElementById("bottomForward");
+    const bottomExitBtn = document.getElementById("bottomExit");
+    const bottomResetBtn = document.getElementById("bottomReset");
+
+    // -----------------------------
+    // Top panel: New Bouncy
+    // -----------------------------
+    const TOP_POINT_SIZE = 12;
+    const TOP_PROJECTILE_R = TOP_POINT_SIZE * 0.85;
+    const TOP_BUBBLE_R = 23;
+    const TOP_GRAVITY = 900;
+    const TOP_DRAG = 0.992;
+    const TOP_WALL_BOUNCE = 0.18;
+    const TOP_BUBBLE_TYPES = [
+      { color: "#8ac926", hp: 1 },
+      { color: "#ffca3a", hp: 2 },
+      { color: "#ff924c", hp: 3 },
+      { color: "#ff595e", hp: 4 }
+    ];
+
+    let topBubbles = [];
+    let topPointies = [];
+    let topQueue = [];
+    let topWon = false;
+
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function topLaunchY() {
+      return topCanvas.height * 0.8;
+    }
+
+    function topUpdateHud() {
+      topBubblesEl.textContent = `Bubbles: ${topBubbles.length}`;
+      topAmmoEl.textContent = `Pointies active: ${topPointies.length}`;
+    }
+
+    function topCreateTailSegments(x, y, angle, shaftLength) {
+      const count = Math.max(2, Math.round(shaftLength / 10));
+      const segments = [];
+      for (let i = 0; i < count; i += 1) {
+        const dist = (i + 1) * (shaftLength / count);
+        segments.push({
+          x: x - Math.cos(angle) * dist,
+          y: y - Math.sin(angle) * dist,
+          vx: 0,
+          vy: 0
+        });
+      }
+      return segments;
+    }
+
+    function topCreatePointy(x, y, color) {
+      const speed = 280;
+      const shaftLength = 84;
+      const launchDeg = rand(-135, -45);
+      const rad = (launchDeg * Math.PI) / 180;
+      return {
+        x,
+        y,
+        vx: Math.cos(rad) * speed,
+        vy: Math.sin(rad) * speed,
+        angle: rad,
+        color,
+        speed,
+        shaftLength,
+        tailSegments: topCreateTailSegments(x, y, rad, shaftLength)
+      };
+    }
+
+    function topQueuePointy(color = "#ffb703") {
+      const minX = TOP_POINT_SIZE + 4;
+      const maxX = topCanvas.width - TOP_POINT_SIZE - 4;
+      const x = rand(minX, maxX);
+      const y = topLaunchY() + (topCanvas.height - topLaunchY()) * 0.55;
+      topPointies.push(topCreatePointy(x, y, color));
+      topUpdateHud();
+    }
+
+    function topInitBubbles() {
+      topBubbles = [];
+      const yLimit = topLaunchY() - TOP_BUBBLE_R - 4;
+      const spacingX = TOP_BUBBLE_R * 2 - TOP_BUBBLE_R * 0.04;
+      const spacingY = Math.sqrt(3) * TOP_BUBBLE_R - TOP_BUBBLE_R * 0.04;
+      const minX = TOP_BUBBLE_R + 2;
+      const maxX = topCanvas.width - TOP_BUBBLE_R - 2;
+      let row = 0;
+      for (let y = TOP_BUBBLE_R + 2; y <= yLimit; y += spacingY) {
+        const offset = row % 2 === 0 ? 0 : TOP_BUBBLE_R;
+        for (let x = minX + offset; x <= maxX; x += spacingX) {
+          const t = TOP_BUBBLE_TYPES[Math.floor(Math.random() * TOP_BUBBLE_TYPES.length)];
+          topBubbles.push({ x, y, vx: 0, vy: 0, color: t.color, hp: t.hp, maxHp: t.hp });
+        }
+        row += 1;
+      }
+      topWon = false;
+      topUpdateHud();
+    }
+
+    function topReset() {
+      topPointies = [];
+      topQueue = [];
+      topInitBubbles();
+      topHintEl.textContent = "Escaped arrows below auto-launch pointies here";
+    }
+
+    function topConstrainBubble(bubble) {
+      const ly = topLaunchY();
+      if (bubble.x < TOP_BUBBLE_R) {
+        bubble.x = TOP_BUBBLE_R;
+        if (bubble.vx < 0) bubble.vx *= -TOP_WALL_BOUNCE;
+      } else if (bubble.x > topCanvas.width - TOP_BUBBLE_R) {
+        bubble.x = topCanvas.width - TOP_BUBBLE_R;
+        if (bubble.vx > 0) bubble.vx *= -TOP_WALL_BOUNCE;
+      }
+      if (bubble.y < TOP_BUBBLE_R) {
+        bubble.y = TOP_BUBBLE_R;
+        if (bubble.vy < 0) bubble.vy *= -TOP_WALL_BOUNCE;
+      } else if (bubble.y > ly - TOP_BUBBLE_R) {
+        bubble.y = ly - TOP_BUBBLE_R;
+        if (bubble.vy > 0) bubble.vy *= -TOP_WALL_BOUNCE;
+      }
+    }
+
+    function topResolvePair(a, b) {
+      let dx = b.x - a.x;
+      let dy = b.y - a.y;
+      let dist = Math.hypot(dx, dy);
+      const minDist = TOP_BUBBLE_R * 2;
+      if (dist >= minDist) return;
+      if (dist < 0.0001) {
+        const ang = Math.random() * Math.PI * 2;
+        dx = Math.cos(ang);
+        dy = Math.sin(ang);
+        dist = 1;
+      }
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const overlap = minDist - dist;
+      a.x -= nx * overlap * 0.5;
+      a.y -= ny * overlap * 0.5;
+      b.x += nx * overlap * 0.5;
+      b.y += ny * overlap * 0.5;
+    }
+
+    function topUpdateBubbles(stepDt) {
+      for (let i = 0; i < topBubbles.length; i += 1) {
+        const b = topBubbles[i];
+        b.vy += TOP_GRAVITY * stepDt;
+        b.x += b.vx * stepDt;
+        b.y += b.vy * stepDt;
+        b.vx *= TOP_DRAG;
+        b.vy *= TOP_DRAG;
+        topConstrainBubble(b);
+      }
+      for (let iter = 0; iter < 3; iter += 1) {
+        for (let i = 0; i < topBubbles.length; i += 1) {
+          for (let j = i + 1; j < topBubbles.length; j += 1) {
+            topResolvePair(topBubbles[i], topBubbles[j]);
+          }
+        }
+      }
+    }
+
+    function topHitBubbleIndex(x, y) {
+      const maxDist = TOP_BUBBLE_R + TOP_PROJECTILE_R;
+      const maxDistSq = maxDist * maxDist;
+      let idx = -1;
+      let best = Infinity;
+      for (let i = 0; i < topBubbles.length; i += 1) {
+        const b = topBubbles[i];
+        const dx = x - b.x;
+        const dy = y - b.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 <= maxDistSq && d2 < best) {
+          idx = i;
+          best = d2;
+        }
+      }
+      return idx;
+    }
+
+    function topUpdateTail(p, stepDt) {
+      const anchorX = p.x - Math.cos(p.angle) * (TOP_POINT_SIZE * 0.85);
+      const anchorY = p.y - Math.sin(p.angle) * (TOP_POINT_SIZE * 0.85);
+      const spacing = p.shaftLength / p.tailSegments.length;
+      for (let i = 0; i < p.tailSegments.length; i += 1) {
+        const seg = p.tailSegments[i];
+        const target = i === 0 ? { x: anchorX, y: anchorY, vx: p.vx, vy: p.vy } : p.tailSegments[i - 1];
+        seg.vx += (target.x - seg.x) * 46 * stepDt;
+        seg.vy += (target.y - seg.y) * 46 * stepDt;
+        seg.vx += (target.vx - seg.vx) * 0.06;
+        seg.vy += (target.vy - seg.vy) * 0.06;
+        seg.vx *= 0.84;
+        seg.vy *= 0.84;
+        seg.x += seg.vx * stepDt;
+        seg.y += seg.vy * stepDt;
+        const dx = seg.x - target.x;
+        const dy = seg.y - target.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const maxDist = spacing * 1.25;
+        if (dist > maxDist) {
+          seg.x = target.x + (dx / dist) * maxDist;
+          seg.y = target.y + (dy / dist) * maxDist;
+        }
+      }
+    }
+
+    function topBounceAfterHit(p) {
+      const base = Math.atan2(p.vy, p.vx) + Math.PI;
+      const jitter = rand((-50 * Math.PI) / 180, (50 * Math.PI) / 180);
+      const rad = base + jitter;
+      p.vx = Math.cos(rad) * p.speed;
+      p.vy = Math.sin(rad) * p.speed;
+      p.angle = Math.atan2(p.vy, p.vx);
+    }
+
+    function topSetDirectionByWall(p, wall) {
+      let deg;
+      if (wall === "left") deg = rand(-75, 75);
+      else if (wall === "right") deg = rand(105, 255);
+      else if (wall === "top") deg = rand(20, 160);
+      else deg = rand(-160, -20);
+      const rad = (deg * Math.PI) / 180;
+      p.vx = Math.cos(rad) * p.speed;
+      p.vy = Math.sin(rad) * p.speed;
+      p.angle = Math.atan2(p.vy, p.vx);
+    }
+
+    function topApplyHit(index, p) {
+      const b = topBubbles[index];
+      b.hp -= 1;
+      if (b.hp <= 0) {
+        topBubbles.splice(index, 1);
+        topUpdateHud();
+      }
+      if (topBubbles.length === 0) {
+        topWon = true;
+        topPointies = [];
+        topHintEl.textContent = "Top panel cleared. Nice!";
+      }
+    }
+
+    function topUpdatePointy(p, stepDt) {
+      if (topWon) return;
+      p.x += p.vx * stepDt;
+      p.y += p.vy * stepDt;
+      if (p.x <= TOP_POINT_SIZE) {
+        p.x = TOP_POINT_SIZE;
+        topSetDirectionByWall(p, "left");
+      } else if (p.x >= topCanvas.width - TOP_POINT_SIZE) {
+        p.x = topCanvas.width - TOP_POINT_SIZE;
+        topSetDirectionByWall(p, "right");
+      }
+      if (p.y <= TOP_POINT_SIZE) {
+        p.y = TOP_POINT_SIZE;
+        topSetDirectionByWall(p, "top");
+      } else if (p.y >= topCanvas.height - TOP_POINT_SIZE) {
+        p.y = topCanvas.height - TOP_POINT_SIZE;
+        topSetDirectionByWall(p, "bottom");
+      }
+      const hit = topHitBubbleIndex(p.x, p.y);
+      if (hit !== -1 && !topWon) {
+        topApplyHit(hit, p);
+        topBounceAfterHit(p);
+      }
+      p.angle = Math.atan2(p.vy, p.vx);
+      topUpdateTail(p, stepDt);
+    }
+
+    function topUpdate(dt) {
+      const subSteps = 3;
+      const stepDt = dt / subSteps;
+      for (let i = 0; i < subSteps; i += 1) {
+        for (let j = 0; j < topPointies.length; j += 1) {
+          topUpdatePointy(topPointies[j], stepDt);
+        }
+        topUpdateBubbles(stepDt);
+      }
+    }
+
+    function topDrawBubble(b) {
+      const grad = topCtx.createRadialGradient(
+        b.x - TOP_BUBBLE_R * 0.4,
+        b.y - TOP_BUBBLE_R * 0.45,
+        TOP_BUBBLE_R * 0.15,
+        b.x,
+        b.y,
+        TOP_BUBBLE_R
+      );
+      grad.addColorStop(0, "#fff");
+      grad.addColorStop(0.35, b.color);
+      grad.addColorStop(1, "rgba(0,0,0,0.25)");
+      topCtx.beginPath();
+      topCtx.fillStyle = grad;
+      topCtx.arc(b.x, b.y, TOP_BUBBLE_R, 0, Math.PI * 2);
+      topCtx.fill();
+      topCtx.beginPath();
+      topCtx.lineWidth = 2;
+      topCtx.strokeStyle = "rgba(0,0,0,0.28)";
+      const ratio = b.hp / b.maxHp;
+      topCtx.arc(b.x, b.y, TOP_BUBBLE_R * 0.75, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
+      topCtx.stroke();
+    }
+
+    function topDrawPointy(p) {
+      const ax = p.x - Math.cos(p.angle) * (TOP_POINT_SIZE * 0.85);
+      const ay = p.y - Math.sin(p.angle) * (TOP_POINT_SIZE * 0.85);
+      const chain = [{ x: ax, y: ay }, ...p.tailSegments];
+      for (let i = 0; i < chain.length - 1; i += 1) {
+        const c1 = chain[i];
+        const c2 = chain[i + 1];
+        const t = i / Math.max(1, chain.length - 2);
+        topCtx.beginPath();
+        topCtx.lineCap = "round";
+        topCtx.lineWidth = 7 - t * 4.5;
+        topCtx.strokeStyle = p.color;
+        topCtx.moveTo(c1.x, c1.y);
+        topCtx.lineTo(c2.x, c2.y);
+        topCtx.stroke();
+      }
+      topCtx.beginPath();
+      topCtx.lineCap = "round";
+      topCtx.lineWidth = 1.5;
+      topCtx.strokeStyle = "rgba(255,255,255,0.42)";
+      topCtx.moveTo(ax, ay);
+      for (let i = 0; i < p.tailSegments.length; i += 1) topCtx.lineTo(p.tailSegments[i].x, p.tailSegments[i].y);
+      topCtx.stroke();
+      topCtx.save();
+      topCtx.translate(p.x, p.y);
+      topCtx.rotate(p.angle);
+      topCtx.beginPath();
+      topCtx.moveTo(TOP_POINT_SIZE, 0);
+      topCtx.lineTo(-TOP_POINT_SIZE * 0.9, TOP_POINT_SIZE * 0.55);
+      topCtx.lineTo(-TOP_POINT_SIZE * 0.9, -TOP_POINT_SIZE * 0.55);
+      topCtx.closePath();
+      topCtx.fillStyle = p.color;
+      topCtx.fill();
+      topCtx.lineWidth = 1.5;
+      topCtx.strokeStyle = "rgba(0,0,0,0.25)";
+      topCtx.stroke();
+      topCtx.restore();
+    }
+
+    function topDraw() {
+      const ly = topLaunchY();
+      const bg = topCtx.createLinearGradient(0, 0, 0, topCanvas.height);
+      bg.addColorStop(0, "#d7f1ff");
+      bg.addColorStop(1, "#f7fdff");
+      topCtx.fillStyle = bg;
+      topCtx.fillRect(0, 0, topCanvas.width, topCanvas.height);
+      topCtx.fillStyle = "rgba(31, 162, 255, 0.12)";
+      topCtx.fillRect(0, ly, topCanvas.width, topCanvas.height - ly);
+      topCtx.strokeStyle = "#1f4f7e";
+      topCtx.lineWidth = 2;
+      topCtx.setLineDash([7, 7]);
+      topCtx.beginPath();
+      topCtx.moveTo(0, ly);
+      topCtx.lineTo(topCanvas.width, ly);
+      topCtx.stroke();
+      topCtx.setLineDash([]);
+
+      topBubbles.sort((a, b) => a.y - b.y);
+      for (let i = 0; i < topBubbles.length; i += 1) topDrawBubble(topBubbles[i]);
+      for (let i = 0; i < topPointies.length; i += 1) topDrawPointy(topPointies[i]);
+
+      if (topWon) {
+        topCtx.save();
+        topCtx.fillStyle = "rgba(5, 25, 40, 0.45)";
+        topCtx.fillRect(0, 0, topCanvas.width, topCanvas.height);
+        topCtx.fillStyle = "#fff";
+        topCtx.textAlign = "center";
+        topCtx.font = "bold 42px Trebuchet MS";
+        topCtx.fillText("TOP CLEAR", topCanvas.width / 2, topCanvas.height / 2 - 8);
+        topCtx.restore();
+      }
+    }
+
+    topRestartBtn.addEventListener("click", topReset);
+
+    // -----------------------------
+    // Bottom panel: Rush Hour Arrows
+    // -----------------------------
+    const GRID = 10;
+    const INITIAL_LEVEL = [
+      { id: "a", color: "#ffeb3b", dir: "left", cells: [{ r: 1, c: 3 }, { r: 0, c: 3 }, { r: 0, c: 2 }, { r: 0, c: 1 }] },
+      { id: "b", color: "#ff5466", dir: "left", cells: [{ r: 1, c: 6 }, { r: 0, c: 6 }, { r: 0, c: 5 }, { r: 0, c: 4 }] },
+      { id: "c", color: "#ff5466", dir: "up", cells: [{ r: 1, c: 7 }, { r: 0, c: 7 }] },
+      { id: "d", color: "#ff5466", dir: "left", cells: [{ r: 1, c: 2 }, { r: 2, c: 2 }, { r: 2, c: 1 }] },
+      { id: "e", color: "#8f55ff", dir: "up", cells: [{ r: 3, c: 0 }, { r: 2, c: 0 }] },
+      { id: "f", color: "#8f55ff", dir: "up", cells: [{ r: 3, c: 4 }, { r: 2, c: 4 }, { r: 1, c: 4 }] },
+      { id: "g", color: "#8f55ff", dir: "right", cells: [{ r: 2, c: 5 }, { r: 3, c: 5 }, { r: 3, c: 6 }, { r: 4, c: 6 }] },
+      { id: "h", color: "#8f55ff", dir: "up", cells: [{ r: 3, c: 9 }, { r: 3, c: 8 }, { r: 2, c: 8 }] },
+      { id: "i", color: "#8f55ff", dir: "up", cells: [{ r: 5, c: 2 }, { r: 5, c: 1 }, { r: 5, c: 0 }, { r: 4, c: 0 }] },
+      { id: "j", color: "#ff5466", dir: "left", cells: [{ r: 6, c: 4 }, { r: 6, c: 3 }, { r: 6, c: 2 }, { r: 6, c: 1 }] },
+      { id: "k", color: "#ffeb3b", dir: "right", cells: [{ r: 4, c: 5 }, { r: 5, c: 5 }, { r: 5, c: 6 }] },
+      { id: "l", color: "#ffeb3b", dir: "up", cells: [{ r: 5, c: 8 }, { r: 6, c: 8 }, { r: 6, c: 7 }, { r: 5, c: 7 }] },
+      { id: "m", color: "#ffeb3b", dir: "down", cells: [{ r: 4, c: 9 }, { r: 5, c: 9 }, { r: 6, c: 9 }] },
+      { id: "n", color: "#8f55ff", dir: "up", cells: [{ r: 7, c: 0 }, { r: 6, c: 0 }] },
+      { id: "o", color: "#6fe64e", dir: "left", cells: [{ r: 8, c: 6 }, { r: 8, c: 5 }, { r: 8, c: 4 }, { r: 8, c: 3 }] },
+      { id: "p", color: "#4ea4ff", dir: "up", cells: [{ r: 7, c: 6 }, { r: 6, c: 6 }] },
+      { id: "q", color: "#ff5466", dir: "right", cells: [{ r: 7, c: 8 }, { r: 7, c: 9 }, { r: 8, c: 9 }] },
+      { id: "r", color: "#6fe64e", dir: "left", cells: [{ r: 9, c: 2 }, { r: 9, c: 1 }, { r: 8, c: 1 }] },
+      { id: "s", color: "#ff5466", dir: "right", cells: [{ r: 7, c: 4 }, { r: 7, c: 5 }] },
+      { id: "t", color: "#6fe64e", dir: "right", cells: [{ r: 9, c: 3 }, { r: 9, c: 4 }, { r: 9, c: 5 }, { r: 9, c: 6 }] }
+    ];
+
+    let bottomPieces = [];
+    let bottomSelectedId = null;
+    let bottomMoves = 0;
+    let bottomDragState = null;
+    let bottomDragPointerId = null;
+    let bottomLastTap = null;
+    const bottomExitingIds = new Set();
+
+    function cloneLevel(level) {
+      return level.map((p) => ({ ...p, cells: p.cells.map((c) => ({ ...c })) }));
+    }
+
+    function bottomStatus(message) {
+      bottomStatusEl.textContent = message;
+    }
+
+    function bottomGetCellSize() {
+      return bottomBoardEl.clientWidth / GRID;
+    }
+
+    function dirVector(dir) {
+      if (dir === "left") return { dr: 0, dc: -1 };
+      if (dir === "right") return { dr: 0, dc: 1 };
+      if (dir === "up") return { dr: -1, dc: 0 };
+      return { dr: 1, dc: 0 };
+    }
+
+    function bottomOccupiedMap(exceptId = null) {
+      const map = new Map();
+      for (const piece of bottomPieces) {
+        if (piece.id === exceptId) continue;
+        for (const cell of piece.cells) map.set(`${cell.r},${cell.c}`, piece.id);
+      }
+      return map;
+    }
+
+    function bottomSelectedPiece() {
+      return bottomPieces.find((p) => p.id === bottomSelectedId) || null;
+    }
+
+    function bottomCanMove(piece, delta) {
+      if (delta === 0) return false;
+      const map = bottomOccupiedMap(piece.id);
+      const vec = dirVector(piece.dir);
+      const dr = vec.dr * delta;
+      const dc = vec.dc * delta;
+      for (const cell of piece.cells) {
+        const nr = cell.r + dr;
+        const nc = cell.c + dc;
+        if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) return false;
+        if (map.has(`${nr},${nc}`)) return false;
+      }
+      return true;
+    }
+
+    function bottomMovePiece(piece, delta) {
+      if (!bottomCanMove(piece, delta)) return false;
+      const vec = dirVector(piece.dir);
+      for (const cell of piece.cells) {
+        cell.r += vec.dr * delta;
+        cell.c += vec.dc * delta;
+      }
+      bottomMoves += 1;
+      return true;
+    }
+
+    function bottomCanExitInDirection(piece, step) {
+      const vec = dirVector(piece.dir);
+      const dr = vec.dr * step;
+      const dc = vec.dc * step;
+      const map = bottomOccupiedMap(piece.id);
+      let hitEdge = false;
+      for (const cell of piece.cells) {
+        const nr = cell.r + dr;
+        const nc = cell.c + dc;
+        if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) hitEdge = true;
+        else if (map.has(`${nr},${nc}`)) return false;
+      }
+      return hitEdge;
+    }
+
+    function bottomHasClearEscapePath(piece, step) {
+      const vec = dirVector(piece.dir);
+      const dr = vec.dr * step;
+      const dc = vec.dc * step;
+      const tip = piece.cells[piece.cells.length - 1];
+      const map = bottomOccupiedMap(piece.id);
+      let r = tip.r + dr;
+      let c = tip.c + dc;
+      while (r >= 0 && r < GRID && c >= 0 && c < GRID) {
+        if (map.has(`${r},${c}`)) return false;
+        r += dr;
+        c += dc;
+      }
+      return true;
+    }
+
+    function bottomBlockingPieceIdsInDirection(piece, step) {
+      const vec = dirVector(piece.dir);
+      const dr = vec.dr * step;
+      const dc = vec.dc * step;
+      const tip = piece.cells[piece.cells.length - 1];
+      const map = bottomOccupiedMap(piece.id);
+      const blockers = new Set();
+      let r = tip.r + dr;
+      let c = tip.c + dc;
+      while (r >= 0 && r < GRID && c >= 0 && c < GRID) {
+        const hit = map.get(`${r},${c}`);
+        if (hit) blockers.add(hit);
+        r += dr;
+        c += dc;
+      }
+      return [...blockers];
+    }
+
+    function bottomFlashBlockingArrows(blockerIds) {
+      if (!blockerIds.length) return;
+      for (const id of blockerIds) {
+        const el = bottomBoardEl.querySelector(`[data-id="${id}"]`);
+        if (el) el.classList.add("blocked-glow");
+      }
+      setTimeout(() => {
+        for (const id of blockerIds) {
+          const el = bottomBoardEl.querySelector(`[data-id="${id}"]`);
+          if (el) el.classList.remove("blocked-glow");
+        }
+      }, 900);
+    }
+
+    function bottomEmitExitSpark(piece) {
+      const rect = bottomBoardEl.getBoundingClientRect();
+      let sumR = 0;
+      let sumC = 0;
+      for (const cell of piece.cells) {
+        sumR += cell.r;
+        sumC += cell.c;
+      }
+      const centerR = sumR / piece.cells.length + 0.5;
+      const centerC = sumC / piece.cells.length + 0.5;
+      const x = rect.left + (centerC / GRID) * rect.width;
+      const y = rect.top + (centerR / GRID) * rect.height;
+      const count = 16;
+      for (let i = 0; i < count; i += 1) {
+        const spark = document.createElement("span");
+        spark.className = "spark";
+        spark.style.setProperty("--sx", `${x}px`);
+        spark.style.setProperty("--sy", `${y}px`);
+        const angle = (Math.PI * 2 * i) / count + Math.random() * 0.35;
+        const dist = 36 + Math.random() * 34;
+        const tx = x + Math.cos(angle) * dist;
+        const ty = y + Math.sin(angle) * dist;
+        spark.style.setProperty("--tx", `${tx}px`);
+        spark.style.setProperty("--ty", `${ty}px`);
+        spark.style.setProperty("--hue", String(320 + Math.floor(Math.random() * 50)));
+        fxLayerEl.appendChild(spark);
+        spark.addEventListener("animationend", () => spark.remove(), { once: true });
+      }
+    }
+
+    function onBottomArrowReleased(piece) {
+      topQueuePointy(piece.color);
+      topHintEl.textContent = `Arrow ${piece.id.toUpperCase()} released below -> pointy auto-launched above`;
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function bottomAnimateExit(pieceId) {
+      if (bottomExitingIds.has(pieceId)) return;
+      const piece = bottomPieces.find((p) => p.id === pieceId);
+      if (!piece) return;
+      if (!bottomHasClearEscapePath(piece, 1)) {
+        const blockers = bottomBlockingPieceIdsInDirection(piece, 1);
+        bottomFlashBlockingArrows(blockers);
+        bottomStatus("No clear path to the edge yet.");
+        return;
+      }
+
+      bottomExitingIds.add(pieceId);
+      const vec = dirVector(piece.dir);
+      const dr = vec.dr;
+      const dc = vec.dc;
+      const len = piece.cells.length;
+      const trail = piece.cells.map((c) => ({ ...c }));
+      let head = { ...trail[trail.length - 1] };
+
+      while (head.r >= 0 && head.r < GRID && head.c >= 0 && head.c < GRID) {
+        head = { r: head.r + dr, c: head.c + dc };
+        trail.push(head);
+        piece.cells = trail.slice(-len).map((c) => ({ ...c }));
+        bottomRender();
+        await sleep(56);
+      }
+
+      bottomExitingIds.delete(pieceId);
+      bottomEmitExitSpark(piece);
+      onBottomArrowReleased(piece);
+      bottomPieces = bottomPieces.filter((p) => p.id !== pieceId);
+      bottomSelectedId = bottomPieces.length ? bottomPieces[0].id : null;
+      bottomMoves += 1;
+      bottomStatus(bottomPieces.length ? "Arrow released." : "All arrows cleared!");
+      bottomRender();
+    }
+
+    function bottomSelect(id) {
+      if (!bottomPieces.some((p) => p.id === id)) return;
+      bottomSelectedId = id;
+      const p = bottomSelectedPiece();
+      bottomStatus(`Selected ${p.id.toUpperCase()} (${p.dir}).`);
+      bottomRender();
+    }
+
+    function bottomMoveSelected(delta) {
+      const p = bottomSelectedPiece();
+      if (!p) {
+        bottomStatus("Select an arrow first.");
+        return;
+      }
+      const moved = bottomMovePiece(p, delta);
+      if (!moved && (delta !== 1 || !bottomHasClearEscapePath(p, 1))) {
+        bottomStatus("Blocked.");
+        bottomRender();
+        return;
+      }
+      if (delta === 1 && bottomHasClearEscapePath(p, 1)) {
+        bottomAnimateExit(p.id);
+        return;
+      }
+      bottomStatus("Moved.");
+      bottomRender();
+    }
+
+    function bottomExitSelected() {
+      const p = bottomSelectedPiece();
+      if (!p) {
+        bottomStatus("Select an arrow first.");
+        return;
+      }
+      bottomAnimateExit(p.id);
+    }
+
+    function bottomRenderPiece(piece) {
+      const cell = bottomGetCellSize();
+      const minR = Math.min(...piece.cells.map((c) => c.r));
+      const maxR = Math.max(...piece.cells.map((c) => c.r));
+      const minC = Math.min(...piece.cells.map((c) => c.c));
+      const maxC = Math.max(...piece.cells.map((c) => c.c));
+      const width = (maxC - minC + 1) * cell;
+      const height = (maxR - minR + 1) * cell;
+      const thickness = Math.max(14, Math.round(cell * 0.37));
+      const headSize = Math.max(14, Math.round(cell * 0.26));
+
+      const pieceEl = document.createElement("div");
+      pieceEl.className = "piece";
+      pieceEl.dataset.id = piece.id;
+      pieceEl.dataset.selected = String(piece.id === bottomSelectedId);
+      pieceEl.style.left = `${minC * cell}px`;
+      pieceEl.style.top = `${minR * cell}px`;
+      pieceEl.style.width = `${width}px`;
+      pieceEl.style.height = `${height}px`;
+
+      const svgNs = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNs, "svg");
+      svg.setAttribute("width", String(width));
+      svg.setAttribute("height", String(height));
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+      const points = piece.cells.map((cellPos) => ({
+        x: (cellPos.c - minC + 0.5) * cell,
+        y: (cellPos.r - minR + 0.5) * cell
+      }));
+      const pathData = points.map((pt, idx) => `${idx === 0 ? "M" : "L"} ${pt.x} ${pt.y}`).join(" ");
+
+      const outline = document.createElementNS(svgNs, "path");
+      outline.setAttribute("d", pathData);
+      outline.setAttribute("fill", "none");
+      outline.setAttribute("stroke", "rgba(86, 24, 62, 0.6)");
+      outline.setAttribute("stroke-width", String(thickness + 5));
+      outline.setAttribute("stroke-linecap", "round");
+      outline.setAttribute("stroke-linejoin", "round");
+
+      const base = document.createElementNS(svgNs, "path");
+      base.setAttribute("d", pathData);
+      base.setAttribute("fill", "none");
+      base.setAttribute("stroke", piece.color);
+      base.setAttribute("stroke-width", String(thickness));
+      base.setAttribute("stroke-linecap", "round");
+      base.setAttribute("stroke-linejoin", "round");
+
+      const tip = points[points.length - 1];
+      const vec = dirVector(piece.dir);
+      const perp = { x: -vec.dr, y: vec.dc };
+      const tipPoint = { x: tip.x + vec.dc * headSize * 0.8, y: tip.y + vec.dr * headSize * 0.8 };
+      const baseCenter = { x: tip.x - vec.dc * headSize * 0.45, y: tip.y - vec.dr * headSize * 0.45 };
+
+      const head = document.createElementNS(svgNs, "polygon");
+      head.setAttribute("points", `${tipPoint.x},${tipPoint.y} ${baseCenter.x + perp.x * headSize * 0.55},${baseCenter.y + perp.y * headSize * 0.55} ${baseCenter.x - perp.x * headSize * 0.55},${baseCenter.y - perp.y * headSize * 0.55}`);
+      head.setAttribute("fill", piece.color);
+      head.setAttribute("stroke", "rgba(86,24,62,0.7)");
+      head.setAttribute("stroke-width", "1");
+
+      svg.append(outline, base, head);
+      pieceEl.append(svg);
+
+      pieceEl.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        if (bottomExitingIds.has(piece.id)) return;
+        bottomSelect(piece.id);
+        bottomDragPointerId = event.pointerId;
+        bottomDragState = { id: piece.id, startX: event.clientX, startY: event.clientY, movedCells: 0 };
+        pieceEl.classList.add("dragging");
+      });
+
+      pieceEl.addEventListener("dblclick", (event) => {
+        event.preventDefault();
+        bottomAnimateExit(piece.id);
+      });
+
+      pieceEl.addEventListener("pointerup", (event) => {
+        const movedCells = bottomDragState && bottomDragState.id === piece.id ? Math.abs(bottomDragState.movedCells) : 0;
+        bottomHandleDoubleTap(piece.id, event.clientX, event.clientY, movedCells);
+        bottomEndDrag(event.pointerId);
+      });
+
+      pieceEl.addEventListener("pointercancel", (event) => bottomEndDrag(event.pointerId));
+
+      return pieceEl;
+    }
+
+    function bottomProcessDrag(clientX, clientY) {
+      if (!bottomDragState) return;
+      const p = bottomPieces.find((it) => it.id === bottomDragState.id);
+      if (!p) return;
+      const cellSize = bottomGetCellSize();
+      const dx = clientX - bottomDragState.startX;
+      const dy = clientY - bottomDragState.startY;
+      const vec = dirVector(p.dir);
+      const axisPx = dx * vec.dc + dy * vec.dr;
+      const targetCells = Math.round(axisPx / cellSize);
+      const needed = targetCells - bottomDragState.movedCells;
+      if (needed === 0) return;
+      const step = needed > 0 ? 1 : -1;
+      let moved = 0;
+      while (Math.abs(moved) < Math.abs(needed)) {
+        if (!bottomMovePiece(p, step)) break;
+        moved += step;
+        if (step === 1 && bottomHasClearEscapePath(p, 1)) {
+          bottomAnimateExit(p.id);
+          return;
+        }
+      }
+      if (moved !== 0) {
+        bottomDragState.movedCells += moved;
+        bottomRender();
+      }
+    }
+
+    function bottomEndDrag(pointerId = null) {
+      if (pointerId !== null && bottomDragPointerId !== null && pointerId !== bottomDragPointerId) return;
+      bottomDragPointerId = null;
+      bottomDragState = null;
+    }
+
+    function bottomHandleDoubleTap(pieceId, clientX, clientY, movedCells) {
+      if (movedCells !== 0) {
+        bottomLastTap = null;
+        return;
+      }
+
+      const now = performance.now();
+      const thresholdMs = 320;
+      const thresholdPx = 28;
+
+      if (
+        bottomLastTap &&
+        bottomLastTap.id === pieceId &&
+        now - bottomLastTap.time <= thresholdMs &&
+        Math.hypot(clientX - bottomLastTap.x, clientY - bottomLastTap.y) <= thresholdPx
+      ) {
+        bottomLastTap = null;
+        bottomAnimateExit(pieceId);
+        return;
+      }
+
+      bottomLastTap = { id: pieceId, x: clientX, y: clientY, time: now };
+    }
+
+    function bottomReset() {
+      bottomPieces = cloneLevel(INITIAL_LEVEL);
+      bottomSelectedId = bottomPieces[0]?.id || null;
+      bottomMoves = 0;
+      bottomStatus("Bottom panel reset. Play normally.");
+      bottomRender();
+    }
+
+    function bottomRender() {
+      bottomBoardEl.innerHTML = "";
+      for (const p of bottomPieces) bottomBoardEl.appendChild(bottomRenderPiece(p));
+      bottomMovesEl.textContent = String(bottomMoves);
+      bottomLeftEl.textContent = String(bottomPieces.length);
+      const hasSel = !!bottomSelectedPiece();
+      bottomBackBtn.disabled = !hasSel;
+      bottomForwardBtn.disabled = !hasSel;
+      bottomExitBtn.disabled = !hasSel;
+    }
+
+    bottomBackBtn.addEventListener("click", () => bottomMoveSelected(-1));
+    bottomForwardBtn.addEventListener("click", () => bottomMoveSelected(1));
+    bottomExitBtn.addEventListener("click", bottomExitSelected);
+    bottomResetBtn.addEventListener("click", bottomReset);
+
+    window.addEventListener("pointermove", (event) => {
+      if (bottomDragPointerId === null || event.pointerId !== bottomDragPointerId) return;
+      bottomProcessDrag(event.clientX, event.clientY);
+    });
+    window.addEventListener("pointerup", (event) => bottomEndDrag(event.pointerId));
+    window.addEventListener("pointercancel", (event) => bottomEndDrag(event.pointerId));
+    window.addEventListener("blur", () => bottomEndDrag());
+
+    window.addEventListener("keydown", (event) => {
+      const p = bottomSelectedPiece();
+      if (!p) return;
+      if (event.code === "Space") {
+        event.preventDefault();
+        bottomExitSelected();
+        return;
+      }
+      const keyVec =
+        event.key === "ArrowLeft" ? { dr: 0, dc: -1 } :
+        event.key === "ArrowRight" ? { dr: 0, dc: 1 } :
+        event.key === "ArrowUp" ? { dr: -1, dc: 0 } :
+        event.key === "ArrowDown" ? { dr: 1, dc: 0 } :
+        null;
+      if (!keyVec) return;
+      const vec = dirVector(p.dir);
+      const projection = keyVec.dr * vec.dr + keyVec.dc * vec.dc;
+      if (projection === 0) return;
+      event.preventDefault();
+      bottomMoveSelected(projection > 0 ? 1 : -1);
+    });
+
+    window.addEventListener("resize", () => {
+      bottomRender();
+      topDraw();
+    });
+
+    // -----------------------------
+    // Loop and bootstrap
+    // -----------------------------
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min((now - last) / 1000, 0.033);
+      last = now;
+      topUpdate(dt);
+      topDraw();
+      requestAnimationFrame(loop);
+    }
+
+    topReset();
+    bottomReset();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
