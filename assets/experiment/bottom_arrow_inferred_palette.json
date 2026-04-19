@@ -1,0 +1,37 @@
+{
+  "source": "assets/forwardarrow.png",
+  "cell": 128,
+  "colors": [
+    {
+      "hex": "#ffeb3b",
+      "name": "yellow",
+      "index": 0
+    },
+    {
+      "hex": "#ff5466",
+      "name": "red",
+      "index": 1
+    },
+    {
+      "hex": "#a768ff",
+      "name": "purple",
+      "index": 2
+    },
+    {
+      "hex": "#78d63d",
+      "name": "green",
+      "index": 3
+    },
+    {
+      "hex": "#4b97ff",
+      "name": "blue",
+      "index": 4
+    }
+  ],
+  "outputs": {
+    "headBase": "assets/experiment/bottom_arrow_head_inferred_base.png",
+    "bodyBase": "assets/experiment/bottom_arrow_body_inferred_base.png",
+    "headSheet": "assets/experiment/bottom_arrow_heads_sheet_inferred.png",
+    "bodySheet": "assets/experiment/bottom_arrow_body_sheet_inferred.png"
+  }
+}
