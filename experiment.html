@@ -5,16 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Experiment</title>
   <style>
+    @import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@700;800&display=swap");
+
     :root {
-      --bg-1: #0b1f3d;
-      --bg-2: #173d69;
-      --panel: #f4fbff;
-      --ink: #112740;
-      --line: #1a4f7f;
-      --chip: #e8f4ff;
-      --chip-line: #bfdbf6;
-      --btn: #ff7d20;
-      --btn-2: #ff5a2f;
+      --bg-1: #ff9fd3;
+      --bg-2: #f47cc6;
+      --bg-3: #ea63be;
+      --ink: #5f2661;
+      --ink-soft: #885189;
+      --card: #ffd9ef;
+      --card-2: #ffc5e6;
+      --line: #ca87b9;
+      --pill: #fff4fb;
+      --pill-line: #efbfdc;
+      --btn: #ffcf3f;
+      --btn-2: #f7aa23;
+      --btn-minor: #9a68ff;
+      --btn-minor-2: #7447e6;
+      --good: #c6f96c;
+      --good-2: #9de73f;
+      --gold-1: #ffd86c;
+      --gold-2: #f6b835;
+      --gold-3: #e5961f;
     }
 
     * { box-sizing: border-box; }
@@ -24,58 +36,204 @@
       min-height: 100vh;
       display: grid;
       place-items: center;
-      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      font-family: "Fredoka", "Trebuchet MS", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(1200px 560px at 50% -10%, #2f8dcc 0%, transparent 60%),
-        linear-gradient(160deg, var(--bg-1), var(--bg-2));
-      padding: 12px;
+        radial-gradient(1000px 540px at 50% -10%, #ffd2ea 0%, transparent 65%),
+        linear-gradient(145deg, var(--bg-1), var(--bg-2) 55%, var(--bg-3));
+      padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(128deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 40%),
+        repeating-linear-gradient(
+          145deg,
+          rgba(255, 255, 255, 0.05) 0,
+          rgba(255, 255, 255, 0.05) 18px,
+          rgba(255, 255, 255, 0.01) 18px,
+          rgba(255, 255, 255, 0.01) 36px
+        );
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .game-chrome {
+      width: min(96vw, 560px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      animation: riseIn 420ms ease both;
+    }
+
+    .chrome-left,
+    .chrome-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 0;
+      background: linear-gradient(180deg, #ffffff, #fbe7f4);
+      box-shadow: 0 6px 0 rgba(136, 57, 111, 0.22), 0 10px 16px rgba(87, 31, 72, 0.23);
+      color: #7e426f;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: "Nunito", "Trebuchet MS", sans-serif;
+      display: grid;
+      place-items: center;
+    }
+
+    .level-badge,
+    .coin-badge {
+      border-radius: 999px;
+      padding: 9px 14px;
+      background: linear-gradient(180deg, #fff, #f9e4f3);
+      border: 2px solid #f5c6e5;
+      box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 8px 14px rgba(101, 32, 81, 0.18);
+      font-family: "Nunito", "Trebuchet MS", sans-serif;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #823f74;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .coin-badge::after {
+      content: "";
+      position: absolute;
+      top: -10px;
+      left: -30px;
+      width: 26px;
+      height: calc(100% + 20px);
+      transform: rotate(16deg);
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0));
+      animation: coinSweep 2.4s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .coin-badge.bump {
+      animation: coinBump 260ms ease;
     }
 
     .wrap {
-      width: min(96vw, 980px);
-      background: var(--panel);
-      border-radius: 20px;
-      padding: 14px;
-      box-shadow: 0 24px 70px rgba(6, 16, 32, 0.45);
+      width: min(96vw, 560px);
+      border-radius: 24px;
+      padding: 8px;
+      box-shadow: 0 22px 48px rgba(95, 22, 77, 0.3);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06));
+      border: 1px solid rgba(255, 255, 255, 0.45);
       display: grid;
-      gap: 12px;
+      gap: 10px;
+      animation: riseIn 560ms cubic-bezier(0.19, 0.73, 0.22, 1) both;
     }
 
     .panel {
-      border: 2px solid #d4e8fb;
-      border-radius: 14px;
-      padding: 10px;
-      background: linear-gradient(180deg, #faffff, #edf7ff);
+      border: 3px solid var(--line);
+      border-radius: 20px;
+      padding: 8px;
+      background: linear-gradient(180deg, var(--card), var(--card-2));
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.72),
+        inset 0 -6px 14px rgba(173, 78, 140, 0.18),
+        0 10px 24px rgba(111, 30, 90, 0.15);
       display: grid;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      --tilt-x: 0deg;
+      --tilt-y: 0deg;
+      --lift: 0px;
+      transform: perspective(900px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(var(--lift));
+      transition: transform 220ms ease, box-shadow 220ms ease;
+      transform-style: preserve-3d;
+      isolation: isolate;
+    }
+
+    .panel.tilt-active {
+      --lift: -2px;
+      box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.52), 0 14px 28px rgba(111, 30, 90, 0.2);
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 32%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0));
+      pointer-events: none;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
       gap: 10px;
+      position: relative;
+      z-index: 1;
     }
 
     .panel h2 {
       margin: 0;
-      font-size: 1.2rem;
-      color: #184061;
+      font-family: "Nunito", "Trebuchet MS", sans-serif;
+      font-size: 1.14rem;
+      color: #73366e;
+      letter-spacing: 0.01em;
     }
 
     .panel p {
       margin: 0;
-      color: #3b5f7e;
-      font-size: 0.92rem;
+      color: var(--ink-soft);
+      font-size: 0.9rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tag {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      padding: 5px 9px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #874d79;
+      letter-spacing: 0.04em;
     }
 
     canvas,
     .board {
       width: 100%;
       display: block;
-      border: 3px solid #113558;
-      border-radius: 12px;
-      background: #e9f6ff;
+      border: 4px solid #ac719e;
+      border-radius: 16px;
+      background: #fde7f5;
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.9),
+        inset 0 -8px 14px rgba(146, 67, 120, 0.17),
+        0 6px 0 rgba(143, 81, 130, 0.55);
     }
 
     #topCanvas {
+      width: 100%;
       height: auto;
+      aspect-ratio: 2 / 3;
       cursor: crosshair;
       touch-action: manipulation;
+      box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.66);
+      position: relative;
+      z-index: 2;
     }
 
     .board {
@@ -84,51 +242,146 @@
       overflow: hidden;
       touch-action: none;
       background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.06) 50%),
-        linear-gradient(0deg, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.06) 50%),
-        linear-gradient(180deg, #f9e5f2, #f1d1e6);
+        linear-gradient(90deg, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.05) 50%),
+        linear-gradient(0deg, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.05) 50%),
+        linear-gradient(180deg, #ffe8f5, #f8d2ea);
       background-size: calc(100% / 10) calc(100% / 10);
+      box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.65);
+      z-index: 2;
     }
 
-    .hud {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
+    .board::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 22% 24%, rgba(255, 255, 255, 0.28) 0 2px, transparent 3px),
+        radial-gradient(circle at 64% 36%, rgba(255, 255, 255, 0.24) 0 1.5px, transparent 2.5px),
+        radial-gradient(circle at 46% 78%, rgba(255, 255, 255, 0.2) 0 2px, transparent 3px),
+        radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.2) 0 1.5px, transparent 2.5px);
+      opacity: 0.35;
+      animation: ambientFloat 14s linear infinite;
+    }
+
+    .board::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 23%),
+        radial-gradient(110% 92% at 50% -18%, rgba(255, 255, 255, 0.24), transparent 55%),
+        radial-gradient(120% 120% at 50% 118%, rgba(101, 32, 80, 0.22), transparent 58%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .bottom-panel .board {
+      width: 66.6667%;
+      margin: 0 auto;
+    }
+
+    .progress-wrap {
+      border-radius: 999px;
+      padding: 4px;
+      background: linear-gradient(180deg, #fff7fc, #f4daea);
+      border: 2px solid #d29ac2;
+      box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 6px 12px rgba(101, 29, 80, 0.2);
+      display: grid;
+      gap: 4px;
+    }
+
+    .progress-track {
+      height: 22px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      overflow: hidden;
+      position: relative;
+      border: 1px solid #e9bcdc;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--gold-1), var(--gold-2), var(--gold-3));
+      box-shadow: 0 0 12px rgba(255, 188, 61, 0.7);
+      transition: width 260ms ease;
+    }
+
+    .progress-label {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-family: "Nunito", "Trebuchet MS", sans-serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #70464d;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .hud,
+    .controls {
+      display: none !important;
     }
 
     .pill {
-      background: var(--chip);
-      border: 1px solid var(--chip-line);
-      border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 0.9rem;
-      color: #173958;
+      background: var(--pill);
+      border: 1px solid var(--pill-line);
+      border-radius: 14px;
+      padding: 8px 10px;
+      font-size: 0.84rem;
+      color: #7e4a79;
       font-weight: 700;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
     }
 
     button {
-      border: 0;
-      border-radius: 10px;
-      padding: 9px 13px;
+      border: 1px solid rgba(172, 107, 32, 0.2);
+      border-radius: 13px;
+      padding: 11px 13px;
       background: linear-gradient(135deg, var(--btn), var(--btn-2));
-      color: #fff;
-      font-weight: 700;
+      color: #7d3f08;
+      font-weight: 800;
+      font-family: "Nunito", "Trebuchet MS", sans-serif;
+      letter-spacing: 0.01em;
       cursor: pointer;
+      box-shadow: 0 4px 0 rgba(156, 94, 28, 0.45), 0 9px 16px rgba(109, 43, 34, 0.18);
+      transition: transform 120ms ease, filter 120ms ease;
+    }
+
+    button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 rgba(156, 94, 28, 0.45), 0 5px 10px rgba(109, 43, 34, 0.18);
+    }
+
+    button:disabled {
+      filter: grayscale(0.3);
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
     }
 
     .minor {
-      background: linear-gradient(135deg, #72afff, #3b83ef);
+      background: linear-gradient(135deg, var(--btn-minor), var(--btn-minor-2));
+      border-color: rgba(104, 66, 194, 0.25);
+      color: #f9f1ff;
+      box-shadow: 0 4px 0 rgba(76, 43, 152, 0.45), 0 9px 16px rgba(73, 29, 139, 0.22);
     }
-
-    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .piece {
       position: absolute;
       user-select: none;
       cursor: grab;
       transition: transform 120ms ease;
-      filter: drop-shadow(0 7px 7px rgba(66, 24, 49, 0.34));
+      filter: drop-shadow(0 8px 10px rgba(66, 24, 49, 0.32));
+    }
+
+    .piece svg {
+      overflow: visible;
     }
 
     .piece.dragging { transition: none; cursor: grabbing; z-index: 10; }
@@ -167,6 +420,13 @@
       animation: sparkOut 620ms cubic-bezier(0.16, 0.84, 0.35, 1) forwards;
     }
 
+    .spark.confetti {
+      width: 11px;
+      height: 16px;
+      border-radius: 4px;
+      animation: confettiOut 860ms cubic-bezier(0.16, 0.84, 0.35, 1) forwards;
+    }
+
     @keyframes sparkOut {
       0% {
         opacity: 0;
@@ -181,25 +441,138 @@
       }
     }
 
+    @keyframes confettiOut {
+      0% {
+        opacity: 0;
+        transform: translate(var(--sx), var(--sy)) rotate(0deg) scale(0.7);
+      }
+      8% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) rotate(540deg) scale(0.2);
+      }
+    }
+
     .piece[data-selected="true"] {
       transform: scale(1.06);
       filter: drop-shadow(0 0 0.5rem rgba(255, 255, 255, 0.82)) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.34));
       z-index: 5;
+      animation: selectPop 240ms cubic-bezier(0.22, 1.2, 0.36, 1);
+    }
+
+    @keyframes riseIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes ambientFloat {
+      0% { transform: translateY(0px) translateX(0px); opacity: 0.26; }
+      50% { transform: translateY(-6px) translateX(3px); opacity: 0.44; }
+      100% { transform: translateY(0px) translateX(0px); opacity: 0.26; }
+    }
+
+    @keyframes selectPop {
+      0% { transform: scale(1); }
+      45% { transform: scale(1.11); }
+      100% { transform: scale(1.06); }
+    }
+
+    @keyframes coinSweep {
+      0% { left: -30px; }
+      45% { left: 140%; }
+      100% { left: 140%; }
+    }
+
+    @keyframes coinBump {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes progressPulse {
+      0% { box-shadow: 0 0 0 rgba(198, 249, 108, 0); }
+      40% { box-shadow: 0 0 24px rgba(198, 249, 108, 0.75); }
+      100% { box-shadow: 0 0 0 rgba(198, 249, 108, 0); }
+    }
+
+    .progress-track.is-win {
+      animation: progressPulse 620ms ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .coin-badge::after,
+      .coin-badge.bump,
+      .progress-track.is-win {
+        animation: none !important;
+      }
+
+      .panel {
+        transform: none !important;
+        transition: none !important;
+      }
     }
 
     @media (max-width: 720px) {
-      .pill { font-size: 0.82rem; padding: 7px 10px; }
-      button { font-size: 0.86rem; padding: 9px 10px; }
+      .game-chrome {
+        width: min(96vw, 560px);
+      }
+
+      .icon-badge {
+        width: 40px;
+        height: 40px;
+        font-size: 0.82rem;
+      }
+
+      .level-badge,
+      .coin-badge {
+        padding: 8px 10px;
+        font-size: 0.82rem;
+      }
+
+      .wrap {
+        padding: 7px;
+        border-radius: 20px;
+      }
+
+      .panel {
+        border-radius: 16px;
+      }
+
+      .pill { font-size: 0.8rem; padding: 7px 9px; }
+      button { font-size: 0.84rem; padding: 10px; }
+    }
+
+    @media (max-width: 460px) {
+      .panel-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
     }
   </style>
 </head>
 <body>
   <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
+  <div class="game-chrome" aria-hidden="true">
+    <div class="chrome-left">
+      <div class="icon-badge">SET</div>
+      <div class="level-badge">LVL 8</div>
+    </div>
+    <div class="chrome-right">
+      <div id="coinBadge" class="coin-badge"><span id="coinCount">350</span> COINS</div>
+    </div>
+  </div>
   <main class="wrap">
-    <section class="panel">
-      <h2>Top Panel: New Bouncy</h2>
-      <p>Launch in the bottom zone of this panel. Every arrow released below gives you +1 pointy here.</p>
-      <canvas id="topCanvas" width="900" height="420" aria-label="New bouncy panel"></canvas>
+    <section class="panel top-panel">
+      <canvas id="topCanvas" width="600" height="900" aria-label="New bouncy panel"></canvas>
       <div class="hud">
         <div class="pill" id="topBubbles">Bubbles: 0</div>
         <div class="pill" id="topAmmo">Pointies active: 0</div>
@@ -208,9 +581,14 @@
       </div>
     </section>
 
-    <section class="panel">
-      <h2>Bottom Panel: Rush Hour Arrows</h2>
-      <p>Play normally. When an arrow exits, a pointy is added to the top panel queue.</p>
+    <section class="progress-wrap" aria-label="Progress">
+      <div class="progress-track">
+        <div id="globalProgressFill" class="progress-fill"></div>
+        <div id="globalProgressLabel" class="progress-label">0%</div>
+      </div>
+    </section>
+
+    <section class="panel bottom-panel">
       <div id="bottomBoard" class="board" aria-label="Rush Hour board" role="application"></div>
       <div class="hud">
         <div class="pill">Moves: <span id="bottomMoves">0</span></div>
@@ -243,13 +621,36 @@
     const bottomForwardBtn = document.getElementById("bottomForward");
     const bottomExitBtn = document.getElementById("bottomExit");
     const bottomResetBtn = document.getElementById("bottomReset");
+    const globalProgressFillEl = document.getElementById("globalProgressFill");
+    const globalProgressLabelEl = document.getElementById("globalProgressLabel");
+    const coinBadgeEl = document.getElementById("coinBadge");
+    const coinCountEl = document.getElementById("coinCount");
+    const progressTrackEl = document.querySelector(".progress-track");
 
     // -----------------------------
     // Top panel: New Bouncy
     // -----------------------------
     const TOP_POINT_SIZE = 12;
     const TOP_PROJECTILE_R = TOP_POINT_SIZE * 0.85;
-    const TOP_BUBBLE_R = 23;
+    const TOP_GRID_COLS = 10;
+    const TOP_GRID_ROWS = 15;
+    const TOP_POINT_SPRITE_CELL = 128;
+    const BOTTOM_HEAD_SPRITE_CELL = 128;
+    const TOP_POINT_SPRITE_MAP = Object.freeze({
+      "#ffb703": 0,
+      "#ffeb3b": 1,
+      "#ff5466": 2,
+      "#8f55ff": 3,
+      "#6fe64e": 4,
+      "#4ea4ff": 5
+    });
+    const BOTTOM_HEAD_SPRITE_MAP = Object.freeze({
+      "#ffeb3b": 0,
+      "#ff5466": 1,
+      "#8f55ff": 2,
+      "#6fe64e": 3,
+      "#4ea4ff": 4
+    });
     const TOP_GRAVITY = 900;
     const TOP_DRAG = 0.992;
     const TOP_WALL_BOUNCE = 0.18;
@@ -264,6 +665,79 @@
     let topPointies = [];
     let topQueue = [];
     let topWon = false;
+    let topPointSpriteReady = false;
+    let topBubblePopReady = false;
+    const topPopBursts = [];
+    let bottomHeadSpritesReady = false;
+    let bottomBodySpritesReady = false;
+    const bottomHeadSpriteByColor = new Map();
+    const bottomBodySpriteByColor = new Map();
+
+    const topPointSpriteSheet = new Image();
+    topPointSpriteSheet.addEventListener("load", () => {
+      topPointSpriteReady = true;
+    });
+    topPointSpriteSheet.src = "assets/experiment/pointy_heads_sheet_toysharp.png?v=3";
+
+    const topBubblePopSprite = new Image();
+    topBubblePopSprite.addEventListener("load", () => {
+      topBubblePopReady = true;
+    });
+    topBubblePopSprite.src = "assets/experiment/bubble_pop_base.png";
+
+    const bottomHeadSheet = new Image();
+    bottomHeadSheet.addEventListener("load", () => {
+      const entries = Object.entries(BOTTOM_HEAD_SPRITE_MAP);
+      for (const [color, index] of entries) {
+        const swatch = document.createElement("canvas");
+        swatch.width = BOTTOM_HEAD_SPRITE_CELL;
+        swatch.height = BOTTOM_HEAD_SPRITE_CELL;
+        const swatchCtx = swatch.getContext("2d");
+        swatchCtx.drawImage(
+          bottomHeadSheet,
+          index * BOTTOM_HEAD_SPRITE_CELL,
+          0,
+          BOTTOM_HEAD_SPRITE_CELL,
+          BOTTOM_HEAD_SPRITE_CELL,
+          0,
+          0,
+          BOTTOM_HEAD_SPRITE_CELL,
+          BOTTOM_HEAD_SPRITE_CELL
+        );
+        const sprite = new Image();
+        sprite.src = swatch.toDataURL("image/png");
+        bottomHeadSpriteByColor.set(color, sprite);
+      }
+      bottomHeadSpritesReady = true;
+    });
+    bottomHeadSheet.src = "assets/experiment/bottom_arrow_heads_sheet_inferred.png?v=2";
+
+    const bottomBodySheet = new Image();
+    bottomBodySheet.addEventListener("load", () => {
+      const entries = Object.entries(BOTTOM_HEAD_SPRITE_MAP);
+      for (const [color, index] of entries) {
+        const swatch = document.createElement("canvas");
+        swatch.width = BOTTOM_HEAD_SPRITE_CELL;
+        swatch.height = BOTTOM_HEAD_SPRITE_CELL;
+        const swatchCtx = swatch.getContext("2d");
+        swatchCtx.drawImage(
+          bottomBodySheet,
+          index * BOTTOM_HEAD_SPRITE_CELL,
+          0,
+          BOTTOM_HEAD_SPRITE_CELL,
+          BOTTOM_HEAD_SPRITE_CELL,
+          0,
+          0,
+          BOTTOM_HEAD_SPRITE_CELL,
+          BOTTOM_HEAD_SPRITE_CELL
+        );
+        const sprite = new Image();
+        sprite.src = swatch.toDataURL("image/png");
+        bottomBodySpriteByColor.set(color, sprite);
+      }
+      bottomBodySpritesReady = true;
+    });
+    bottomBodySheet.src = "assets/experiment/bottom_arrow_body_sheet_inferred.png?v=2";
 
     function rand(min, max) {
       return Math.random() * (max - min) + min;
@@ -273,9 +747,47 @@
       return topCanvas.height * 0.8;
     }
 
+    function topBubbleRadius() {
+      return (topCanvas.width / TOP_GRID_COLS) * 0.48;
+    }
+
     function topUpdateHud() {
       topBubblesEl.textContent = `Bubbles: ${topBubbles.length}`;
       topAmmoEl.textContent = `Pointies active: ${topPointies.length}`;
+    }
+
+    function topPointSpriteIndex(color) {
+      const key = (color || "").toLowerCase();
+      return Object.prototype.hasOwnProperty.call(TOP_POINT_SPRITE_MAP, key) ? TOP_POINT_SPRITE_MAP[key] : 0;
+    }
+
+    function topPointGlowColor(color) {
+      if (!color) return "rgba(255, 215, 80, 0.55)";
+      const hex = color.replace("#", "");
+      if (hex.length !== 6) return "rgba(255, 215, 80, 0.55)";
+      const red = parseInt(hex.slice(0, 2), 16);
+      const green = parseInt(hex.slice(2, 4), 16);
+      const blue = parseInt(hex.slice(4, 6), 16);
+      return `rgba(${red}, ${green}, ${blue}, 0.52)`;
+    }
+
+    function colorMix(hex, targetHex, amount) {
+      const base = (hex || "#ffffff").replace("#", "");
+      const target = (targetHex || "#000000").replace("#", "");
+      const br = parseInt(base.slice(0, 2), 16);
+      const bg = parseInt(base.slice(2, 4), 16);
+      const bb = parseInt(base.slice(4, 6), 16);
+      const tr = parseInt(target.slice(0, 2), 16);
+      const tg = parseInt(target.slice(2, 4), 16);
+      const tb = parseInt(target.slice(4, 6), 16);
+      const r = Math.round(br + (tr - br) * amount);
+      const g = Math.round(bg + (tg - bg) * amount);
+      const b = Math.round(bb + (tb - bb) * amount);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function topEmitBubblePop(x, y, color) {
+      topPopBursts.push({ x, y, color, age: 0, duration: 0.38, scale: rand(0.8, 1.15) });
     }
 
     function topCreateTailSegments(x, y, angle, shaftLength) {
@@ -322,14 +834,15 @@
 
     function topInitBubbles() {
       topBubbles = [];
-      const yLimit = topLaunchY() - TOP_BUBBLE_R - 4;
-      const spacingX = TOP_BUBBLE_R * 2 - TOP_BUBBLE_R * 0.04;
-      const spacingY = Math.sqrt(3) * TOP_BUBBLE_R - TOP_BUBBLE_R * 0.04;
-      const minX = TOP_BUBBLE_R + 2;
-      const maxX = topCanvas.width - TOP_BUBBLE_R - 2;
+      const radius = topBubbleRadius();
+      const yLimit = topLaunchY() - radius - 4;
+      const spacingX = topCanvas.width / TOP_GRID_COLS;
+      const spacingY = Math.sqrt(3) * radius - radius * 0.04;
+      const minX = radius + 2;
+      const maxX = topCanvas.width - radius - 2;
       let row = 0;
-      for (let y = TOP_BUBBLE_R + 2; y <= yLimit; y += spacingY) {
-        const offset = row % 2 === 0 ? 0 : TOP_BUBBLE_R;
+      for (let y = radius + 2; y <= yLimit; y += spacingY) {
+        const offset = row % 2 === 0 ? 0 : spacingX * 0.5;
         for (let x = minX + offset; x <= maxX; x += spacingX) {
           const t = TOP_BUBBLE_TYPES[Math.floor(Math.random() * TOP_BUBBLE_TYPES.length)];
           topBubbles.push({ x, y, vx: 0, vy: 0, color: t.color, hp: t.hp, maxHp: t.hp });
@@ -348,28 +861,30 @@
     }
 
     function topConstrainBubble(bubble) {
+      const radius = topBubbleRadius();
       const ly = topLaunchY();
-      if (bubble.x < TOP_BUBBLE_R) {
-        bubble.x = TOP_BUBBLE_R;
+      if (bubble.x < radius) {
+        bubble.x = radius;
         if (bubble.vx < 0) bubble.vx *= -TOP_WALL_BOUNCE;
-      } else if (bubble.x > topCanvas.width - TOP_BUBBLE_R) {
-        bubble.x = topCanvas.width - TOP_BUBBLE_R;
+      } else if (bubble.x > topCanvas.width - radius) {
+        bubble.x = topCanvas.width - radius;
         if (bubble.vx > 0) bubble.vx *= -TOP_WALL_BOUNCE;
       }
-      if (bubble.y < TOP_BUBBLE_R) {
-        bubble.y = TOP_BUBBLE_R;
+      if (bubble.y < radius) {
+        bubble.y = radius;
         if (bubble.vy < 0) bubble.vy *= -TOP_WALL_BOUNCE;
-      } else if (bubble.y > ly - TOP_BUBBLE_R) {
-        bubble.y = ly - TOP_BUBBLE_R;
+      } else if (bubble.y > ly - radius) {
+        bubble.y = ly - radius;
         if (bubble.vy > 0) bubble.vy *= -TOP_WALL_BOUNCE;
       }
     }
 
     function topResolvePair(a, b) {
+      const radius = topBubbleRadius();
       let dx = b.x - a.x;
       let dy = b.y - a.y;
       let dist = Math.hypot(dx, dy);
-      const minDist = TOP_BUBBLE_R * 2;
+      const minDist = radius * 2;
       if (dist >= minDist) return;
       if (dist < 0.0001) {
         const ang = Math.random() * Math.PI * 2;
@@ -406,7 +921,7 @@
     }
 
     function topHitBubbleIndex(x, y) {
-      const maxDist = TOP_BUBBLE_R + TOP_PROJECTILE_R;
+      const maxDist = topBubbleRadius() + TOP_PROJECTILE_R;
       const maxDistSq = maxDist * maxDist;
       let idx = -1;
       let best = Infinity;
@@ -474,6 +989,7 @@
       const b = topBubbles[index];
       b.hp -= 1;
       if (b.hp <= 0) {
+        topEmitBubblePop(b.x, b.y, b.color);
         topBubbles.splice(index, 1);
         topUpdateHud();
       }
@@ -520,30 +1036,73 @@
         }
         topUpdateBubbles(stepDt);
       }
+      for (let i = topPopBursts.length - 1; i >= 0; i -= 1) {
+        topPopBursts[i].age += dt;
+        if (topPopBursts[i].age >= topPopBursts[i].duration) topPopBursts.splice(i, 1);
+      }
+    }
+
+    function topDrawPopBursts() {
+      for (let i = 0; i < topPopBursts.length; i += 1) {
+        const burst = topPopBursts[i];
+        const t = Math.min(1, burst.age / burst.duration);
+        const ease = 1 - (1 - t) * (1 - t);
+        const radius = topBubbleRadius() * (0.75 + ease * 0.9) * burst.scale;
+        topCtx.save();
+        topCtx.globalAlpha = 1 - t;
+        if (topBubblePopReady) {
+          const size = radius * 2.6;
+          topCtx.drawImage(topBubblePopSprite, burst.x - size / 2, burst.y - size / 2, size, size);
+        } else {
+          topCtx.beginPath();
+          topCtx.fillStyle = burst.color || "#ffffff";
+          topCtx.arc(burst.x, burst.y, radius * 0.35, 0, Math.PI * 2);
+          topCtx.fill();
+        }
+        topCtx.restore();
+      }
     }
 
     function topDrawBubble(b) {
+      const radius = topBubbleRadius();
       const grad = topCtx.createRadialGradient(
-        b.x - TOP_BUBBLE_R * 0.4,
-        b.y - TOP_BUBBLE_R * 0.45,
-        TOP_BUBBLE_R * 0.15,
+        b.x - radius * 0.4,
+        b.y - radius * 0.45,
+        radius * 0.15,
         b.x,
         b.y,
-        TOP_BUBBLE_R
+        radius
       );
       grad.addColorStop(0, "#fff");
       grad.addColorStop(0.35, b.color);
       grad.addColorStop(1, "rgba(0,0,0,0.25)");
       topCtx.beginPath();
       topCtx.fillStyle = grad;
-      topCtx.arc(b.x, b.y, TOP_BUBBLE_R, 0, Math.PI * 2);
+      topCtx.arc(b.x, b.y, radius, 0, Math.PI * 2);
       topCtx.fill();
+
+      topCtx.beginPath();
+      topCtx.lineWidth = Math.max(1.5, radius * 0.09);
+      topCtx.strokeStyle = "rgba(255,255,255,0.46)";
+      topCtx.arc(b.x, b.y, radius * 0.95, Math.PI * 1.1, Math.PI * 1.85);
+      topCtx.stroke();
+
       topCtx.beginPath();
       topCtx.lineWidth = 2;
       topCtx.strokeStyle = "rgba(0,0,0,0.28)";
       const ratio = b.hp / b.maxHp;
-      topCtx.arc(b.x, b.y, TOP_BUBBLE_R * 0.75, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
+      topCtx.arc(b.x, b.y, radius * 0.75, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
       topCtx.stroke();
+
+      topCtx.beginPath();
+      topCtx.fillStyle = "rgba(255,255,255,0.62)";
+      topCtx.ellipse(b.x - radius * 0.35, b.y - radius * 0.42, radius * 0.21, radius * 0.14, -0.4, 0, Math.PI * 2);
+      topCtx.fill();
+
+      topCtx.beginPath();
+      topCtx.fillStyle = "rgba(255,255,255,0.28)";
+      topCtx.ellipse(b.x - radius * 0.15, b.y - radius * 0.21, radius * 0.11, radius * 0.08, -0.4, 0, Math.PI * 2);
+      topCtx.fill();
     }
 
     function topDrawPointy(p) {
@@ -572,29 +1131,106 @@
       topCtx.save();
       topCtx.translate(p.x, p.y);
       topCtx.rotate(p.angle);
-      topCtx.beginPath();
-      topCtx.moveTo(TOP_POINT_SIZE, 0);
-      topCtx.lineTo(-TOP_POINT_SIZE * 0.9, TOP_POINT_SIZE * 0.55);
-      topCtx.lineTo(-TOP_POINT_SIZE * 0.9, -TOP_POINT_SIZE * 0.55);
-      topCtx.closePath();
-      topCtx.fillStyle = p.color;
-      topCtx.fill();
-      topCtx.lineWidth = 1.5;
-      topCtx.strokeStyle = "rgba(0,0,0,0.25)";
-      topCtx.stroke();
+      if (topPointSpriteReady) {
+        const spriteIndex = topPointSpriteIndex(p.color);
+        const drawSize = TOP_POINT_SIZE * 3.55;
+        const srcX = spriteIndex * TOP_POINT_SPRITE_CELL;
+        topCtx.shadowColor = topPointGlowColor(p.color);
+        topCtx.shadowBlur = 8;
+        topCtx.shadowOffsetX = 0;
+        topCtx.shadowOffsetY = 5;
+        topCtx.globalAlpha = 0.98;
+        topCtx.drawImage(
+          topPointSpriteSheet,
+          srcX,
+          0,
+          TOP_POINT_SPRITE_CELL,
+          TOP_POINT_SPRITE_CELL,
+          -drawSize * 0.56,
+          -drawSize * 0.52,
+          drawSize,
+          drawSize
+        );
+        topCtx.shadowBlur = 0;
+        topCtx.globalAlpha = 1;
+      } else {
+        topCtx.beginPath();
+        topCtx.moveTo(TOP_POINT_SIZE, 0);
+        topCtx.lineTo(-TOP_POINT_SIZE * 0.9, TOP_POINT_SIZE * 0.55);
+        topCtx.lineTo(-TOP_POINT_SIZE * 0.9, -TOP_POINT_SIZE * 0.55);
+        topCtx.closePath();
+        topCtx.fillStyle = p.color;
+        topCtx.fill();
+        topCtx.lineWidth = 1.5;
+        topCtx.strokeStyle = "rgba(0,0,0,0.25)";
+        topCtx.stroke();
+      }
       topCtx.restore();
     }
 
     function topDraw() {
       const ly = topLaunchY();
       const bg = topCtx.createLinearGradient(0, 0, 0, topCanvas.height);
-      bg.addColorStop(0, "#d7f1ff");
-      bg.addColorStop(1, "#f7fdff");
+      bg.addColorStop(0, "#ffeaf6");
+      bg.addColorStop(1, "#fff5fc");
       topCtx.fillStyle = bg;
       topCtx.fillRect(0, 0, topCanvas.width, topCanvas.height);
+
+      const now = performance.now() * 0.00008;
+      for (let i = 0; i < 18; i += 1) {
+        const px = (i * 71 + now * topCanvas.width * 0.9) % topCanvas.width;
+        const pyBase = ((i * 97) % Math.max(1, Math.floor(topCanvas.height * 0.78))) + topCanvas.height * 0.06;
+        const py = pyBase + Math.sin(now * 7 + i) * 6;
+        const size = 1.3 + ((i % 3) * 0.45);
+        topCtx.beginPath();
+        topCtx.fillStyle = `rgba(255,255,255,${0.09 + (i % 4) * 0.03})`;
+        topCtx.arc(px, py, size, 0, Math.PI * 2);
+        topCtx.fill();
+      }
+
+      const cellW = topCanvas.width / TOP_GRID_COLS;
+      const cellH = topCanvas.height / TOP_GRID_ROWS;
+      for (let r = 0; r < TOP_GRID_ROWS; r += 1) {
+        for (let c = 0; c < TOP_GRID_COLS; c += 1) {
+          if ((r + c) % 2 === 0) {
+            topCtx.fillStyle = "rgba(255,255,255,0.16)";
+            topCtx.fillRect(c * cellW, r * cellH, cellW, cellH);
+          }
+        }
+      }
+      topCtx.strokeStyle = "rgba(165, 90, 146, 0.12)";
+      topCtx.lineWidth = 1;
+      for (let c = 1; c < TOP_GRID_COLS; c += 1) {
+        const x = c * cellW;
+        topCtx.beginPath();
+        topCtx.moveTo(x, 0);
+        topCtx.lineTo(x, topCanvas.height);
+        topCtx.stroke();
+      }
+      for (let r = 1; r < TOP_GRID_ROWS; r += 1) {
+        const y = r * cellH;
+        topCtx.beginPath();
+        topCtx.moveTo(0, y);
+        topCtx.lineTo(topCanvas.width, y);
+        topCtx.stroke();
+      }
       topCtx.fillStyle = "rgba(31, 162, 255, 0.12)";
       topCtx.fillRect(0, ly, topCanvas.width, topCanvas.height - ly);
-      topCtx.strokeStyle = "#1f4f7e";
+
+      const vignette = topCtx.createRadialGradient(
+        topCanvas.width / 2,
+        topCanvas.height / 2,
+        topCanvas.width * 0.24,
+        topCanvas.width / 2,
+        topCanvas.height / 2,
+        topCanvas.width * 0.86
+      );
+      vignette.addColorStop(0, "rgba(0,0,0,0)");
+      vignette.addColorStop(1, "rgba(109, 38, 84, 0.20)");
+      topCtx.fillStyle = vignette;
+      topCtx.fillRect(0, 0, topCanvas.width, topCanvas.height);
+
+      topCtx.strokeStyle = "#b0689d";
       topCtx.lineWidth = 2;
       topCtx.setLineDash([7, 7]);
       topCtx.beginPath();
@@ -605,6 +1241,7 @@
 
       topBubbles.sort((a, b) => a.y - b.y);
       for (let i = 0; i < topBubbles.length; i += 1) topDrawBubble(topBubbles[i]);
+      topDrawPopBursts();
       for (let i = 0; i < topPointies.length; i += 1) topDrawPointy(topPointies[i]);
 
       if (topWon) {
@@ -655,6 +1292,106 @@
     let bottomDragPointerId = null;
     let bottomLastTap = null;
     const bottomExitingIds = new Set();
+    const bottomTotalAtStart = INITIAL_LEVEL.length;
+    let progressWinFxPlayed = false;
+    let coinCount = Number(coinCountEl?.textContent || 350);
+    let coinAnimFrame = null;
+
+    function animateCoinTo(target) {
+      const start = coinCount;
+      const change = Math.max(0, target - start);
+      if (change === 0) return;
+      if (coinAnimFrame) cancelAnimationFrame(coinAnimFrame);
+
+      const startTime = performance.now();
+      const duration = 420;
+      const easeOut = (t) => 1 - (1 - t) * (1 - t);
+
+      coinBadgeEl.classList.remove("bump");
+      void coinBadgeEl.offsetWidth;
+      coinBadgeEl.classList.add("bump");
+
+      function tick(now) {
+        const p = Math.min(1, (now - startTime) / duration);
+        const value = Math.round(start + change * easeOut(p));
+        coinCountEl.textContent = String(value);
+        if (p < 1) {
+          coinAnimFrame = requestAnimationFrame(tick);
+          return;
+        }
+        coinCount = target;
+        coinAnimFrame = null;
+      }
+      coinAnimFrame = requestAnimationFrame(tick);
+    }
+
+    function addCoins(amount) {
+      if (amount <= 0) return;
+      animateCoinTo(coinCount + amount);
+    }
+
+    function emitWinProgressBurst() {
+      const rect = progressTrackEl.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      const count = 22;
+      for (let i = 0; i < count; i += 1) {
+        const confetti = document.createElement("span");
+        confetti.className = "spark confetti";
+        confetti.style.setProperty("--sx", `${x}px`);
+        confetti.style.setProperty("--sy", `${y}px`);
+        const angle = (Math.PI * 2 * i) / count + Math.random() * 0.55;
+        const dist = 40 + Math.random() * 44;
+        const tx = x + Math.cos(angle) * dist;
+        const ty = y + Math.sin(angle) * dist;
+        confetti.style.setProperty("--tx", `${tx}px`);
+        confetti.style.setProperty("--ty", `${ty}px`);
+        confetti.style.setProperty("--hue", String(35 + Math.floor(Math.random() * 300)));
+        fxLayerEl.appendChild(confetti);
+        confetti.addEventListener("animationend", () => confetti.remove(), { once: true });
+      }
+
+      progressTrackEl.classList.remove("is-win");
+      void progressTrackEl.offsetWidth;
+      progressTrackEl.classList.add("is-win");
+    }
+
+    function setupPanelTilt() {
+      const panels = document.querySelectorAll(".panel");
+      const maxTilt = 2.6;
+
+      panels.forEach((panel) => {
+        panel.addEventListener("pointermove", (event) => {
+          const rect = panel.getBoundingClientRect();
+          const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+          panel.style.setProperty("--tilt-x", `${(-ny * maxTilt).toFixed(2)}deg`);
+          panel.style.setProperty("--tilt-y", `${(nx * maxTilt).toFixed(2)}deg`);
+          panel.classList.add("tilt-active");
+        });
+
+        panel.addEventListener("pointerleave", () => {
+          panel.style.setProperty("--tilt-x", "0deg");
+          panel.style.setProperty("--tilt-y", "0deg");
+          panel.classList.remove("tilt-active");
+        });
+      });
+    }
+
+    function bottomUpdateGlobalProgress() {
+      const solved = Math.max(0, bottomTotalAtStart - bottomPieces.length);
+      const ratio = bottomTotalAtStart > 0 ? solved / bottomTotalAtStart : 0;
+      const pct = Math.round(ratio * 100);
+      globalProgressFillEl.style.width = `${pct}%`;
+      globalProgressLabelEl.textContent = `${pct}%`;
+
+      if (pct >= 100 && !progressWinFxPlayed) {
+        progressWinFxPlayed = true;
+        emitWinProgressBurst();
+      } else if (pct < 100) {
+        progressWinFxPlayed = false;
+      }
+    }
 
     function cloneLevel(level) {
       return level.map((p) => ({ ...p, cells: p.cells.map((c) => ({ ...c })) }));
@@ -809,6 +1546,7 @@
 
     function onBottomArrowReleased(piece) {
       topQueuePointy(piece.color);
+      addCoins(7);
       topHintEl.textContent = `Arrow ${piece.id.toUpperCase()} released below -> pointy auto-launched above`;
     }
 
@@ -898,8 +1636,8 @@
       const maxC = Math.max(...piece.cells.map((c) => c.c));
       const width = (maxC - minC + 1) * cell;
       const height = (maxR - minR + 1) * cell;
-      const thickness = Math.max(14, Math.round(cell * 0.37));
-      const headSize = Math.max(14, Math.round(cell * 0.26));
+      const thickness = Math.max(18, Math.round(cell * 0.48));
+      const headSize = Math.max(18, Math.round(cell * 0.36));
 
       const pieceEl = document.createElement("div");
       pieceEl.className = "piece";
@@ -925,32 +1663,189 @@
       const outline = document.createElementNS(svgNs, "path");
       outline.setAttribute("d", pathData);
       outline.setAttribute("fill", "none");
-      outline.setAttribute("stroke", "rgba(86, 24, 62, 0.6)");
-      outline.setAttribute("stroke-width", String(thickness + 5));
+      outline.setAttribute("stroke", colorMix(piece.color, "#1b3e8e", 0.42));
+      outline.setAttribute("stroke-opacity", "0.58");
+      outline.setAttribute("stroke-width", String(thickness + 4));
       outline.setAttribute("stroke-linecap", "round");
       outline.setAttribute("stroke-linejoin", "round");
 
       const base = document.createElementNS(svgNs, "path");
       base.setAttribute("d", pathData);
       base.setAttribute("fill", "none");
-      base.setAttribute("stroke", piece.color);
+      const gradId = `pieceGrad_${piece.id}`;
+      const defs = document.createElementNS(svgNs, "defs");
+      const grad = document.createElementNS(svgNs, "linearGradient");
+      grad.setAttribute("id", gradId);
+      grad.setAttribute("x1", "0%");
+      grad.setAttribute("y1", "0%");
+      grad.setAttribute("x2", "100%");
+      grad.setAttribute("y2", "100%");
+
+      const headGradId = `headGrad_${piece.id}`;
+      const headGrad = document.createElementNS(svgNs, "linearGradient");
+      headGrad.setAttribute("id", headGradId);
+      headGrad.setAttribute("x1", "26%");
+      headGrad.setAttribute("y1", "18%");
+      headGrad.setAttribute("x2", "78%");
+      headGrad.setAttribute("y2", "88%");
+
+      const stopA = document.createElementNS(svgNs, "stop");
+      stopA.setAttribute("offset", "0%");
+      stopA.setAttribute("stop-color", colorMix(piece.color, "#ffffff", 0.56));
+      stopA.setAttribute("stop-opacity", "1");
+
+      const stopB = document.createElementNS(svgNs, "stop");
+      stopB.setAttribute("offset", "42%");
+      stopB.setAttribute("stop-color", colorMix(piece.color, "#ffffff", 0.2));
+      stopB.setAttribute("stop-opacity", "1");
+
+      const stopC = document.createElementNS(svgNs, "stop");
+      stopC.setAttribute("offset", "100%");
+      stopC.setAttribute("stop-color", colorMix(piece.color, "#12367f", 0.34));
+      stopC.setAttribute("stop-opacity", "1");
+
+      const hs0 = document.createElementNS(svgNs, "stop");
+      hs0.setAttribute("offset", "0%");
+      hs0.setAttribute("stop-color", colorMix(piece.color, "#ffffff", 0.5));
+      hs0.setAttribute("stop-opacity", "1");
+
+      const hs1 = document.createElementNS(svgNs, "stop");
+      hs1.setAttribute("offset", "58%");
+      hs1.setAttribute("stop-color", colorMix(piece.color, "#ffffff", 0.18));
+      hs1.setAttribute("stop-opacity", "1");
+
+      const hs2 = document.createElementNS(svgNs, "stop");
+      hs2.setAttribute("offset", "100%");
+      hs2.setAttribute("stop-color", colorMix(piece.color, "#1a4fb4", 0.28));
+      hs2.setAttribute("stop-opacity", "1");
+
+      headGrad.append(hs0, hs1, hs2);
+
+      grad.append(stopA, stopB, stopC);
+      defs.append(grad, headGrad);
+      svg.append(defs);
+
+      base.setAttribute("stroke", `url(#${gradId})`);
       base.setAttribute("stroke-width", String(thickness));
       base.setAttribute("stroke-linecap", "round");
       base.setAttribute("stroke-linejoin", "round");
 
+      const innerShade = document.createElementNS(svgNs, "path");
+      innerShade.setAttribute("d", pathData);
+      innerShade.setAttribute("fill", "none");
+      innerShade.setAttribute("stroke", colorMix(piece.color, "#1a4cae", 0.24));
+      innerShade.setAttribute("stroke-opacity", "0.44");
+      innerShade.setAttribute("stroke-width", String(Math.max(2, thickness * 0.36)));
+      innerShade.setAttribute("stroke-linecap", "round");
+      innerShade.setAttribute("stroke-linejoin", "round");
+      innerShade.setAttribute("transform", "translate(1.1 1.6)");
+
+      const gloss = document.createElementNS(svgNs, "path");
+      gloss.setAttribute("d", pathData);
+      gloss.setAttribute("fill", "none");
+      gloss.setAttribute("stroke", "rgba(255,255,255,0.52)");
+      gloss.setAttribute("stroke-width", String(Math.max(2, thickness * 0.2)));
+      gloss.setAttribute("stroke-linecap", "round");
+      gloss.setAttribute("stroke-linejoin", "round");
+      gloss.setAttribute("transform", "translate(-1.2 -1.4)");
+
+      const glossBand = document.createElementNS(svgNs, "path");
+      glossBand.setAttribute("d", pathData);
+      glossBand.setAttribute("fill", "none");
+      glossBand.setAttribute("stroke", "rgba(255,255,255,0.2)");
+      glossBand.setAttribute("stroke-width", String(Math.max(1, thickness * 0.11)));
+      glossBand.setAttribute("stroke-linecap", "round");
+      glossBand.setAttribute("stroke-linejoin", "round");
+      glossBand.setAttribute("transform", "translate(-2.2 -2.3)");
+
+      const spriteKey = (piece.color || "").toLowerCase();
+      let textureStroke = null;
+      if (bottomBodySpritesReady && bottomBodySpriteByColor.has(spriteKey)) {
+        const textureId = `bodyTex_${piece.id}`;
+        const tile = Math.max(10, Math.round(thickness * 0.82));
+        const pattern = document.createElementNS(svgNs, "pattern");
+        pattern.setAttribute("id", textureId);
+        pattern.setAttribute("patternUnits", "userSpaceOnUse");
+        pattern.setAttribute("width", String(tile));
+        pattern.setAttribute("height", String(tile));
+
+        const textureImage = document.createElementNS(svgNs, "image");
+        textureImage.setAttributeNS("http://www.w3.org/1999/xlink", "href", bottomBodySpriteByColor.get(spriteKey).src);
+        textureImage.setAttribute("x", "0");
+        textureImage.setAttribute("y", "0");
+        textureImage.setAttribute("width", String(tile));
+        textureImage.setAttribute("height", String(tile));
+        textureImage.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        textureImage.setAttribute("opacity", "0.82");
+        pattern.append(textureImage);
+        defs.append(pattern);
+
+        textureStroke = document.createElementNS(svgNs, "path");
+        textureStroke.setAttribute("d", pathData);
+        textureStroke.setAttribute("fill", "none");
+        textureStroke.setAttribute("stroke", `url(#${textureId})`);
+        textureStroke.setAttribute("stroke-width", String(Math.max(2, thickness * 0.88)));
+        textureStroke.setAttribute("stroke-linecap", "round");
+        textureStroke.setAttribute("stroke-linejoin", "round");
+        textureStroke.setAttribute("opacity", "0.54");
+      }
+
       const tip = points[points.length - 1];
       const vec = dirVector(piece.dir);
       const perp = { x: -vec.dr, y: vec.dc };
-      const tipPoint = { x: tip.x + vec.dc * headSize * 0.8, y: tip.y + vec.dr * headSize * 0.8 };
-      const baseCenter = { x: tip.x - vec.dc * headSize * 0.45, y: tip.y - vec.dr * headSize * 0.45 };
+      const tipPoint = { x: tip.x + vec.dc * headSize * 0.92, y: tip.y + vec.dr * headSize * 0.92 };
+      const neck = { x: tip.x - vec.dc * headSize * 0.08, y: tip.y - vec.dr * headSize * 0.08 };
+      const shoulder = { x: neck.x - vec.dc * headSize * 0.18, y: neck.y - vec.dr * headSize * 0.18 };
+      const left = { x: shoulder.x + perp.x * headSize * 0.66, y: shoulder.y + perp.y * headSize * 0.66 };
+      const right = { x: shoulder.x - perp.x * headSize * 0.66, y: shoulder.y - perp.y * headSize * 0.66 };
+      const baseRound = { x: shoulder.x - vec.dc * headSize * 0.4, y: shoulder.y - vec.dr * headSize * 0.4 };
+      const c1 = { x: tipPoint.x - vec.dc * headSize * 0.32 + perp.x * headSize * 0.22, y: tipPoint.y - vec.dr * headSize * 0.32 + perp.y * headSize * 0.22 };
+      const c2 = { x: tipPoint.x - vec.dc * headSize * 0.32 - perp.x * headSize * 0.22, y: tipPoint.y - vec.dr * headSize * 0.32 - perp.y * headSize * 0.22 };
 
-      const head = document.createElementNS(svgNs, "polygon");
-      head.setAttribute("points", `${tipPoint.x},${tipPoint.y} ${baseCenter.x + perp.x * headSize * 0.55},${baseCenter.y + perp.y * headSize * 0.55} ${baseCenter.x - perp.x * headSize * 0.55},${baseCenter.y - perp.y * headSize * 0.55}`);
-      head.setAttribute("fill", piece.color);
-      head.setAttribute("stroke", "rgba(86,24,62,0.7)");
-      head.setAttribute("stroke-width", "1");
+      const headPath = [
+        `M ${left.x} ${left.y}`,
+        `Q ${c1.x} ${c1.y} ${tipPoint.x} ${tipPoint.y}`,
+        `Q ${c2.x} ${c2.y} ${right.x} ${right.y}`,
+        `Q ${baseRound.x} ${baseRound.y} ${left.x} ${left.y}`,
+        "Z"
+      ].join(" ");
 
-      svg.append(outline, base, head);
+      const head = document.createElementNS(svgNs, "path");
+      head.setAttribute("d", headPath);
+      head.setAttribute("fill", `url(#${headGradId})`);
+      head.setAttribute("stroke", colorMix(piece.color, "#1a4cae", 0.42));
+      head.setAttribute("stroke-width", "1.8");
+      head.setAttribute("stroke-linejoin", "round");
+
+      const headShade = document.createElementNS(svgNs, "path");
+      headShade.setAttribute("d", headPath);
+      headShade.setAttribute("fill", "none");
+      headShade.setAttribute("stroke", colorMix(piece.color, "#174193", 0.2));
+      headShade.setAttribute("stroke-width", "1.5");
+      headShade.setAttribute("stroke-linejoin", "round");
+      headShade.setAttribute("transform", "translate(0.9 1.1)");
+
+      const headGloss = document.createElementNS(svgNs, "path");
+      headGloss.setAttribute("d", `M ${shoulder.x + perp.x * headSize * 0.16} ${shoulder.y + perp.y * headSize * 0.16} Q ${tipPoint.x - vec.dc * headSize * 0.24} ${tipPoint.y - vec.dr * headSize * 0.24} ${tipPoint.x - vec.dc * headSize * 0.44} ${tipPoint.y - vec.dr * headSize * 0.44}`);
+      headGloss.setAttribute("fill", "none");
+      headGloss.setAttribute("stroke", "rgba(255,255,255,0.6)");
+      headGloss.setAttribute("stroke-width", String(Math.max(1.4, headSize * 0.16)));
+      headGloss.setAttribute("stroke-linecap", "round");
+
+      const neckBlend = document.createElementNS(svgNs, "circle");
+      neckBlend.setAttribute("cx", String(neck.x));
+      neckBlend.setAttribute("cy", String(neck.y));
+      neckBlend.setAttribute("r", String(Math.max(4, thickness * 0.44)));
+      neckBlend.setAttribute("fill", `url(#${gradId})`);
+      neckBlend.setAttribute("opacity", "0.94");
+
+      if (textureStroke) {
+        svg.append(outline, base, textureStroke, innerShade, gloss, glossBand);
+      } else {
+        svg.append(outline, base, innerShade, gloss, glossBand);
+      }
+
+      svg.append(neckBlend, headShade, head, headGloss);
       pieceEl.append(svg);
 
       pieceEl.addEventListener("pointerdown", (event) => {
@@ -1053,6 +1948,7 @@
       bottomBackBtn.disabled = !hasSel;
       bottomForwardBtn.disabled = !hasSel;
       bottomExitBtn.disabled = !hasSel;
+      bottomUpdateGlobalProgress();
     }
 
     bottomBackBtn.addEventListener("click", () => bottomMoveSelected(-1));
@@ -1095,7 +1991,6 @@
       topDraw();
     });
 
-    // -----------------------------
     // Loop and bootstrap
     // -----------------------------
     let last = performance.now();
@@ -1109,6 +2004,7 @@
 
     topReset();
     bottomReset();
+    setupPanelTilt();
     requestAnimationFrame(loop);
   </script>
 </body>
